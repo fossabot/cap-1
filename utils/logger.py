@@ -23,7 +23,7 @@ class ColorFormatter(logging.Formatter):
         new_record = copy.copy(record)
         if new_record.levelno in LOG_COLORS:
             # we want levelname to be in different color, so let's modify it
-            new_record.levelname = "{color_begin}{level}{color_end}".format(
+            new_record.levelname = "{color_begin}{level:8s}{color_end}".format(
                 level=new_record.levelname,
                 color_begin=LOG_COLORS[new_record.levelno],
                 color_end=colorama.Style.RESET_ALL,
@@ -32,12 +32,14 @@ class ColorFormatter(logging.Formatter):
         return super(ColorFormatter, self).format(new_record)
 
 
-# class CustomFilter(logging.Filter):
-#     def filter(self, record):
-#         if hasattr(record, 'list') and len(record) > 0:
-#             for k in record.list.iteritems():
-#                 record.msg = record.msg + '\n\t' + '[ ' + k + ' ]'
-#         return super(CustomFilter, self).filter(record)
+class ListFilter(logging.Filter):
+    def filter(self, record):
+        if hasattr(record, 'list'):
+            width = max(map(len, record.list))
+            record.msg = record.msg + f'\n{"+ "}{"-" * width}{" +"}\n'
+            record.msg += ''.join([f'|{" "}{line:<{width}}{" "}|\n' for line in record.list])
+            record.msg = record.msg + f'{"+ "}{"-" * width}{" +"}'
+        return super(ListFilter, self).filter(record)
 
 
 class Logger(object):
@@ -58,45 +60,48 @@ class Logger(object):
         log_name = os.path.join(log_path, "{}.log".format(log_time))
         #  这里进行判断，如果logger.handlers列表为空，则添加，否则，直接去写日志，解决重复打印的问题
         if not self.logger.handlers:
-            # 写入日志文件
-            fh = logging.FileHandler(log_name, 'a', encoding='utf-8')  # 追加模式  这个是python2的
+            # FileHandler
+            fh = logging.FileHandler(log_name, 'a', encoding='utf-8')
             fh.setLevel(logging.DEBUG)
 
             fh_formatter = logging.Formatter(
-                '[%(asctime)s] %(filename)s->%(funcName)s line:%(lineno)d [%(levelname)s]%(message)s')
+                '[%(asctime)s] %(filename)s -> %(funcName)s line:%(lineno)d [%(levelname)s] %(message)s')
             fh.setFormatter(fh_formatter)
 
-            # 创建一个handler，用于输出到控制台
+            # StreamHandler
             ch = logging.StreamHandler(sys.stdout)
             ch.setLevel(logging.DEBUG)
             # 定义handler的输出格式, 控制台输出使用 ColorFormatter
-            formatter = ColorFormatter("%(levelname)s %(message)s")
+            formatter = ColorFormatter('%(levelname)s %(message)s')
             ch.setFormatter(formatter)
-            # ch.addFilter(CustomFilter())
+            # 按行打印 list
+            ch.addFilter(ListFilter())
 
             # 给logger添加handler
             self.logger.addHandler(fh)
             self.logger.addHandler(ch)
 
-    def debug(self, msg):
-        self.logger.debug(str(msg))
+    def debug(self, msg, *args, **kwargs):
+        self.logger.debug(str(msg), *args, **kwargs)
 
-    def info(self, msg):
-        self.logger.info(str(msg))
+    def info(self, msg, *args, **kwargs):
+        self.logger.info(str(msg), *args, **kwargs)
 
-    def warning(self, msg):
-        self.logger.warning(str(msg))
+    def warning(self, msg, *args, **kwargs):
+        self.logger.warning(str(msg), *args, **kwargs)
 
-    def error(self, msg):
-        self.logger.error(str(msg))
+    def error(self, msg, *args, **kwargs):
+        self.logger.error(str(msg), *args, **kwargs)
 
-    def critical(self, msg):
-        self.logger.critical(str(msg))
+    def critical(self, msg, *args, **kwargs):
+        self.logger.critical(str(msg), *args, **kwargs)
 
 
 if __name__ == '__main__':
     log = Logger()
-    log.debug("debug")
+    a = ['dfdfasdfas', 'sdfasdfdf', 'dfdasdfasdff']
+    d = {'list': a}
+    log.info("This shows extra", extra=d)
     log.info("info")
     log.error("error")
     log.warning("warning")

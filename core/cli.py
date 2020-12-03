@@ -1,7 +1,7 @@
 import argparse
-import os
-from pathlib import Path
 import textwrap
+from pathlib import Path
+
 from config.config import get_cfg_defaults
 from core.common import get_video_path_list
 from utils.logger import Logger
@@ -37,7 +37,7 @@ def set_argparse():
     > ./cap folder_path another_folder_path
 
     """, '+', lambda line: True))
-    parser.add_argument('p', default=[], nargs='*', help="file_path->number")
+    parser.add_argument('p', default=['.'], nargs='*', help="file_path->number")
     parser.add_argument('-c', default="config.yaml", help="configuration_file_path")
 
     return parser.parse_args()
@@ -82,21 +82,18 @@ def check_input(cfg):
             if Path(file).is_file():
                 file.append(file)
                 numbers.append(number)
-                # 这个 log 感觉有点蠢
-                logger.info("The following videos will be searched soon:")
-                for v in file:
-                    logger.info(v)
-                # print(*("\n[" + os.path.split(i)[1] + "]\n" for i in file), sep='\n')
+                # https://stackoverflow.com/questions/22934616/multi-line-logging-in-python
+                logger.info("The following videos will be searched soon:", extra={'list': file})
                 return {"file": file, "number": numbers}
             else:
                 logger.info("file path error: {}".format(i))
         except ValueError:
             if Path(i).is_dir():
                 folder.append(i)
-                logger.info("the videos in the following folders will be searched soon：")
-                for f in folder:
-                    logger.info(f)
-                # print(*("\n[" + i + "]\n" for i in folder), sep='\n')
+                logger.info("the videos in the following folders will be searched soon：", extra={'list': folder})
+                if cfg.common.debug:
+                    video_list = get_video_path_list(folder, cfg)
+                    logger.debug('video list:', extra={'list': video_list})
                 return get_video_path_list(folder, cfg)
             else:
                 logger.info("folder path error: {}".format(i))

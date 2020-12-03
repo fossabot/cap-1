@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+
 from core.common import (
     number_parser,
     create_failed_folder,
@@ -93,7 +94,7 @@ class CapBase:
                 # logger.info("mkdir folder %s".format(folder_path))
                 return folder_path
             except OSError:
-                logger.info("fail to mkdir folder: %s".format(folder_path))
+                logger.info("fail to mkdir folder: {}".format(folder_path))
 
     def move_rename_video(self, folder_path, data):
         """
@@ -136,12 +137,13 @@ class CapBase:
         return write_nfo(new_file_name, metadata, self.cfg)
 
     def __call__(self):
-        metadata = self.get_metadata
-        if not self.cfg.common.debug:
-            created_folder = self.create_folder(metadata)
-            new_file_name = self.move_rename_video(created_folder, metadata)
-            self.img_utils(created_folder, metadata)
-            self.create_nfo(new_file_name, metadata)
+        # metadata = self.get_metadata
+        # if not self.cfg.common.debug:
+        #     created_folder = self.create_folder(metadata)
+        #     new_file_name = self.move_rename_video(created_folder, metadata)
+        #     self.img_utils(created_folder, metadata)
+        #     self.create_nfo(new_file_name, metadata)
+        return self.get_metadata
 
 
 class Cap:

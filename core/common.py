@@ -1,10 +1,11 @@
 import os
 import re
-import sys
 import shutil
-import requests
+import sys
 from pathlib import Path
-from dataclasses import asdict
+
+import requests
+# from dataclasses import asdict
 from lxml.etree import Element, SubElement, ElementTree
 
 from utils.logger import Logger
@@ -114,14 +115,14 @@ def replace_date(data, location_rule) -> str:
         str:
     """
     # TODO 更换了数据暂存方式，需要更改
-    replace_data_list = [i for i in list(
-        asdict(data).keys()) if i in location_rule]
-    for s in replace_data_list:
-        location_rule = location_rule.replace(s, asdict(data)[s])
-    # Remove illegal characters
-    res = '[\/\\\:\*\?\"\<\>\|]'
-    location_rule = re.sub(res, "_", location_rule)
-    return location_rule
+    # replace_data_list = [i for i in list(
+    #     asdict(data).keys()) if i in location_rule]
+    # for s in replace_data_list:
+    #     location_rule = location_rule.replace(s, asdict(data)[s])
+    # # Remove illegal characters
+    # res = '[\/\\\:\*\?\"\<\>\|]'
+    # location_rule = re.sub(res, "_", location_rule)
+    # return location_rule
 
 
 def check_name_length(name, max_title_len) -> str:
