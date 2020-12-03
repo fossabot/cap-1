@@ -32,6 +32,14 @@ class ColorFormatter(logging.Formatter):
         return super(ColorFormatter, self).format(new_record)
 
 
+# class CustomFilter(logging.Filter):
+#     def filter(self, record):
+#         if hasattr(record, 'list') and len(record) > 0:
+#             for k in record.list.iteritems():
+#                 record.msg = record.msg + '\n\t' + '[ ' + k + ' ]'
+#         return super(CustomFilter, self).filter(record)
+
+
 class Logger(object):
     def __init__(self):
         """
@@ -64,6 +72,7 @@ class Logger(object):
             # 定义handler的输出格式, 控制台输出使用 ColorFormatter
             formatter = ColorFormatter("%(levelname)s %(message)s")
             ch.setFormatter(formatter)
+            # ch.addFilter(CustomFilter())
 
             # 给logger添加handler
             self.logger.addHandler(fh)

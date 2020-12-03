@@ -1,5 +1,6 @@
 import argparse
 import os
+from pathlib import Path
 import textwrap
 from config.config import get_cfg_defaults
 from core.common import get_video_path_list
@@ -51,15 +52,15 @@ def load_config():
     parser = set_argparse()
     # load config file
     cfg = get_cfg_defaults()
-    if not os.path.isfile("config/config.yaml"):
+    project_root = Path(__file__).parent.parent
+    if project_root.joinpath('config.yaml').exists():
         logger.info("use default config")
     else:
         try:
             cfg.merge_from_file(parser.c)
             logger.info("load config，start searching")
         except Exception as e:
-            print(e)
-            logger.error('config file error')
+            logger.error('config file error:{}'.format(e))
     return cfg
 
 
@@ -73,25 +74,29 @@ def check_input(cfg):
 
     """
     parser = set_argparse()
-    file, numbers, folder = [], [], []
+    numbers, folder = [], []
     for i in parser.p:
         # split means pointing number
         try:
             file, number = i.split('->')
-            if os.path.isfile(file):
+            if Path(file).is_file():
                 file.append(file)
                 numbers.append(number)
-                logger.info("The following videos will be searched soon：")
-                print(*("\n[" + os.path.split(i)[1] + "]\n" for i in file), sep='\n')
+                # 这个 log 感觉有点蠢
+                logger.info("The following videos will be searched soon:")
+                for v in file:
+                    logger.info(v)
+                # print(*("\n[" + os.path.split(i)[1] + "]\n" for i in file), sep='\n')
                 return {"file": file, "number": numbers}
             else:
                 logger.info("file path error: {}".format(i))
         except ValueError:
-            if os.path.isdir(i):
-                folder.append(i) if os.path.isdir(
-                    i) else logger.info("folder path error")
+            if Path(i).is_dir():
+                folder.append(i)
                 logger.info("the videos in the following folders will be searched soon：")
-                print(*("\n[" + i + "]\n" for i in folder), sep='\n')
+                for f in folder:
+                    logger.info(f)
+                # print(*("\n[" + i + "]\n" for i in folder), sep='\n')
                 return get_video_path_list(folder, cfg)
             else:
                 logger.info("folder path error: {}".format(i))

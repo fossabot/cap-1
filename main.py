@@ -3,11 +3,6 @@ from core.cli import (
     check_input
 )
 from core.cap import Cap
-from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
-
-_UI_LOCK = Lock()
-_workers = ThreadPoolExecutor(max_workers=2)
 
 
 def main():

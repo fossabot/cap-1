@@ -95,7 +95,6 @@ class Javdb(CrawlerCommon):
 
 class JavdbBuilder:
     def __init__(self):
-        # self.number = number
         self._instance = None
 
     def __call__(self, number, cfg):
@@ -105,7 +104,7 @@ class JavdbBuilder:
 
 
 if __name__ == "__main__":
-    # jav = Javdb("KIWVR-177")
+    # jav = Javdb("")
     # data = jav.get_data()
     # print(data.released)
     pass

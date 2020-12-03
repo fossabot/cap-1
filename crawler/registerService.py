@@ -1,5 +1,7 @@
-import os
-import importlib
+from importlib import import_module
+from pathlib import Path
+from utils.logger import Logger
+logger = Logger()
 
 
 def auto_register_service():
@@ -9,21 +11,22 @@ def auto_register_service():
 
     """
     service = WebProvider()
-    # get path of crawler folder
-    crawler_path = os.path.dirname(__file__)
-    # get list of subdirectories name
-    for folder_name in next(os.walk(crawler_path))[1]:
-        folder_path_list = os.listdir(os.path.join(crawler_path, folder_name))
-        modules = [x for x in folder_path_list if x.endswith('.py')]
-        for module in modules:
-            # import according folder name
-            module_name = module.split('.', 1)[0]
-            module_object = importlib.import_module(
-                'crawler.' + folder_name + "." + module_name)
-            # register module when class has 'title' attr
-            module_class = getattr(module_object, module_name.capitalize())
-            if hasattr(module_class, "title"):
-                service.register_builder(module_name, module_class())
+    cwd = Path.cwd()
+    # 获取二级目录地址
+    folder_path_list = [path for path in cwd.iterdir() if path.is_dir()]
+    # 搜索二级目录中 py 文件
+    modules = sum([list(folder.glob('*.py')) for folder in folder_path_list], [])
+    for module in modules:
+        # 文件名称，去除后缀
+        module_name = module.name.split('.')[0]
+        # eg. crawler.javbus.javbus
+        module_object = import_module('crawler.' + module.parent.name + "." + module_name)
+        # eg. <class 'crawler.javbus.javbus.JavbusBuilder'>
+        try:
+            module_class = getattr(module_object, module_name.capitalize() + 'Builder')
+            service.register_builder(module_name, module_class())
+        except AttributeError as e:
+            logger.error('error import builder class:{}'.format(e))
     return service
 
 

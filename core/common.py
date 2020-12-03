@@ -3,6 +3,7 @@ import re
 import sys
 import shutil
 import requests
+from pathlib import Path
 from dataclasses import asdict
 from lxml.etree import Element, SubElement, ElementTree
 
@@ -30,7 +31,9 @@ def free_proxy_pool(cfg):
 
 
 def number_parser(file_path: str):
-    file_path = os.path.basename(file_path)
+    # //TODO 还没看
+    # file_path = os.path.basename(file_path)
+    file_path = Path(file_path).resolve()
     # return file_path
     try:
         if '-' in file_path or '_' in file_path:
@@ -58,12 +61,12 @@ def create_failed_folder(cfg) -> object:
     Args:
         cfg:
     """
-    if not os.path.exists(cfg.common.failed_output_folder):
-        try:
-            os.makedirs(cfg.common.failed_output_folder)
-        except IOError:
-            logger.error("fail to create folder")
-            sys.exit()
+    faild_folder = Path(cfg.common.failed_output_folder)
+    try:
+        faild_folder.mkdir(exist_ok=True)
+    except OSError as exc:
+        logger.error("fail to create folder: {}".format(str(exc)))
+        sys.exit()
 
 
 def get_video_path_list(folder_path, cfg):
@@ -110,6 +113,7 @@ def replace_date(data, location_rule) -> str:
     Returns:
         str:
     """
+    # TODO 更换了数据暂存方式，需要更改
     replace_data_list = [i for i in list(
         asdict(data).keys()) if i in location_rule]
     for s in replace_data_list:
@@ -168,8 +172,8 @@ def write_nfo(file_path, data, cfg):
         data:
     """
     nfo_root = Element("movie")
-    path_split = os.path.split(file_path)
-    filename = os.path.join(path_split[0], path_split[-1].split('.')[0] + '.nfo')
+    folder = Path(file_path).parent
+    filename = folder.joinpath(Path(file_path).with_suffix('.nfo'))
     nfo_fields = dict
     if cfg.common.mode == "":
         nfo_fields = {

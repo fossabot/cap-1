@@ -1,6 +1,5 @@
-import os
 import shutil
-
+from pathlib import Path
 from core.common import (
     number_parser,
     create_failed_folder,
@@ -87,10 +86,11 @@ class CapBase:
         for name in location_rule.split('/'):
             # check length of name
             name = check_name_length(name, self.cfg.name_rule.max_title_len)
-            folder_path = os.path.join(self.cfg.name_rule.success_output_folder, name)
+            output_folder = Path(self.cfg.name_rule.success_output_folder).resolve()
+            folder_path = output_folder.joinpath(name)
             try:
-                os.makedirs(folder_path)
-                logger.info("mkdir folder %s".format(folder_path))
+                folder_path.mkdir(exist_ok=True)
+                # logger.info("mkdir folder %s".format(folder_path))
                 return folder_path
             except OSError:
                 logger.info("fail to mkdir folder: %s".format(folder_path))
@@ -106,13 +106,12 @@ class CapBase:
         naming_rule = check_name_length(self.cfg.name_rule.naming_rule, self.cfg.name_rule.max_title_len)
         # replace data ,get new file name
         new_file_name = replace_date(data, naming_rule)
-        os.rename(self.file_path, new_file_name)
-        new_file_path = os.path.join(os.path.split(self.file_path), new_file_name)
+        new_file_path = Path(folder_path).joinpath(new_file_name)
         try:
-            shutil.move(new_file_path, folder_path)
-            logger.info("move: {} to folder: {} ".format(os.path.split(new_file_path)[1], folder_path))
-        except Exception as error_info:
-            logger.error("fail to move" + str(error_info))
+            shutil.move(self.file_path, new_file_path)
+            logger.info("move: {} to folder: {} ".format(self.file_path, folder_path))
+        except Exception as exc:
+            logger.error("fail to move" + str(exc))
 
         return new_file_name
 
@@ -124,8 +123,9 @@ class CapBase:
             created_folder:
             metadata:
         """
+        # //TODO 图片下载
         request = CrawlerCommon(self.cfg)
-        request.download(metadata.poster, os.path.join(created_folder, "poster.name"))
+        request.download(metadata.poster, Path(created_folder).joinpath('poster.name'))
 
     def create_nfo(self, new_file_name, metadata):
         """

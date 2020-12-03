@@ -1,3 +1,14 @@
+fork:
+
+~~借这个项目练习一下 python ，消磨时间。收藏小姐姐可能是最大的动力吧~~   
+
+![](https://img.shields.io/badge/completion%20progress-33.33%25-green)
+
+对原项目进行了改写（主要是完全自己写，写不出来）
+
+都是新学，主要是一些爬虫和文件操作，各种地方搜，抄的，倒是抄了不少高级操作，也是不求甚解啊。
+
+ ---
 # AV Data Capture (CLI)
 
 CLI 版本  
