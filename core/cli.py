@@ -37,7 +37,7 @@ def set_argparse():
     > ./cap folder_path another_folder_path
 
     """, '+', lambda line: True))
-    parser.add_argument('p', default=['.'], nargs='*', help="file_path->number")
+    parser.add_argument('p', default=['G:/a'], nargs='*', help="file_path->number")
     parser.add_argument('-c', default="config.yaml", help="configuration_file_path")
 
     return parser.parse_args()
@@ -52,15 +52,22 @@ def load_config():
     parser = set_argparse()
     # load config file
     cfg = get_cfg_defaults()
-    project_root = Path(__file__).parent.parent
-    if project_root.joinpath('config.yaml').exists():
-        logger.info("use default config")
-    else:
+    config_file = Path(__file__).parent.parent.joinpath('config.yaml')
+    if parser.c:
         try:
             cfg.merge_from_file(parser.c)
             logger.info("load config，start searching")
         except Exception as e:
-            logger.error('config file error:{}'.format(e))
+            logger.error(f'config file error:{e}')
+    elif config_file.exists():
+        logger.info("use root path config file")
+        try:
+            cfg.merge_from_file(config_file.as_posix())
+        except Exception as e:
+            logger.error(f'config file error:{e}')
+    else:
+        logger.info('use defalt config')
+        return cfg
     return cfg
 
 
@@ -74,29 +81,27 @@ def check_input(cfg):
 
     """
     parser = set_argparse()
-    numbers, folder = [], []
+    ids, files, folders = [], [], []
     for i in parser.p:
         # split means pointing number
         try:
-            file, number = i.split('->')
-            if Path(file).is_file():
-                file.append(file)
-                numbers.append(number)
-                # https://stackoverflow.com/questions/22934616/multi-line-logging-in-python
-                logger.info("The following videos will be searched soon:", extra={'list': file})
-                return {"file": file, "number": numbers}
+            _file, _id = i.split('->')
+            if Path(_file).is_file():
+                files.append(Path(_file))
+                ids.append(_id)
+                logger.info("The following videos will be searched soon:", extra={'list': files})
             else:
-                logger.info("file path error: {}".format(i))
+                logger.info(f'file path error: {i}')
         except ValueError:
             if Path(i).is_dir():
-                folder.append(i)
-                logger.info("the videos in the following folders will be searched soon：", extra={'list': folder})
+                folders.append(i)
+                logger.info("the videos in the following folders will be searched soon：", extra={'list': folders})
+                files = sum([get_video_path_list(f, cfg) for f in folders], [])
                 if cfg.common.debug:
-                    video_list = get_video_path_list(folder, cfg)
-                    logger.debug('video list:', extra={'list': video_list})
-                return get_video_path_list(folder, cfg)
+                    logger.debug('video list:', extra={'list': files})
             else:
-                logger.info("folder path error: {}".format(i))
+                logger.info(f'folder path error: {i}')
+    return {"file": files, "number": ids}
 
 
 if __name__ == "__main__":

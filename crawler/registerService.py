@@ -1,6 +1,8 @@
 from importlib import import_module
 from pathlib import Path
+
 from utils.logger import Logger
+
 logger = Logger()
 
 
@@ -11,22 +13,17 @@ def auto_register_service():
 
     """
     service = WebProvider()
-    cwd = Path.cwd()
-    # 获取二级目录地址
-    folder_path_list = [path for path in cwd.iterdir() if path.is_dir()]
     # 搜索二级目录中 py 文件
-    modules = sum([list(folder.glob('*.py')) for folder in folder_path_list], [])
+    modules = sum([list(folder.glob('*.py')) for folder in Path.cwd().iterdir()], [])
     for module in modules:
-        # 文件名称，去除后缀
-        module_name = module.name.split('.')[0]
         # eg. crawler.javbus.javbus
-        module_object = import_module('crawler.' + module.parent.name + "." + module_name)
+        module_object = import_module('crawler.' + module.parent.name + '.' + module.stem)
         # eg. <class 'crawler.javbus.javbus.JavbusBuilder'>
         try:
-            module_class = getattr(module_object, module_name.capitalize() + 'Builder')
-            service.register_builder(module_name, module_class())
+            module_class = getattr(module_object, module.stem.capitalize() + 'Builder')
+            service.register_builder(module.stem, module_class())
         except AttributeError as e:
-            logger.error('error import builder class:{}'.format(e))
+            logger.error(f'error import builder class:{e}')
     return service
 
 
@@ -45,8 +42,3 @@ class WebProvider:
 
     def get(self, service_id, **kwargs):
         return self.create(service_id, **kwargs)
-
-
-# class WebProvider(ObjectFactory):
-#     def get(self, service_id, *args):
-#         return self.create(service_id, *args)

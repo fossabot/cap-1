@@ -1,5 +1,5 @@
-import re
 import heapq
+import re
 import shutil
 
 from crawler.requestHandler import RequestHandler
@@ -9,14 +9,23 @@ logger = Logger()
 
 
 class Metadata(dict):
-    def __init__(self, **kwargs):
-        super(Metadata, self).__init__(**kwargs)
-
-    def __getattr__(self, item):
+    def __getattr__(self, key):
         try:
-            return dict.__getitem__(self, item)
+            return self[key]
         except KeyError:
             return ''
+
+    def __setattr__(self, key, value):
+        self[key] = value
+
+    # def __delattr__(self, key):
+    #     try:
+    #         del self[key]
+    #     except KeyError as k:
+    #         raise AttributeError(k)
+
+    def __repr__(self):
+        return dict.__repr__(self)
 
 
 class CrawlerCommon(RequestHandler):
@@ -48,9 +57,9 @@ class CrawlerCommon(RequestHandler):
 
             with open(file_name, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
-            logger.info('sucessfully download: {}'.format(file_name))
+            logger.info(f'sucessfully download: {file_name}')
         else:
-            logger.info('fail download: {}'.format(file_name))
+            logger.warning(f'fail download: {file_name}')
 
 
 class PriorityQueue:

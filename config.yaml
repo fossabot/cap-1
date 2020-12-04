@@ -7,15 +7,12 @@ common:
   auto_exit: 1
   transalte_to_sc: 1
 proxy:
-  enable: Fale
+  enable: False
   type: socks5
   host: 
-  timeout: 5
-  retry: 3
 name_rule:
   location_rule: actor/number
   naming_rule: number-title
   max_title_len: 50
 exclude:
-  literals: \()/
   folders: [failed,output,escape]

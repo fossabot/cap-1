@@ -1,8 +1,8 @@
 import copy
 import logging
-import os.path
 import sys
 import time
+from pathlib import Path
 
 import colorama
 
@@ -33,11 +33,12 @@ class ColorFormatter(logging.Formatter):
 
 
 class ListFilter(logging.Filter):
+    # https://stackoverflow.com/questions/22934616/multi-line-logging-in-python
     def filter(self, record):
         if hasattr(record, 'list'):
-            width = max(map(len, record.list))
+            width = max(map(len, list(map(str, record.list))))
             record.msg = record.msg + f'\n{"+ "}{"-" * width}{" +"}\n'
-            record.msg += ''.join([f'|{" "}{line:<{width}}{" "}|\n' for line in record.list])
+            record.msg += ''.join([f'|{" "}{line:<{width}}{" "}|\n' for line in list(map(str, record.list))])
             record.msg = record.msg + f'{"+ "}{"-" * width}{" +"}'
         return super(ListFilter, self).filter(record)
 
@@ -51,13 +52,11 @@ class Logger(object):
 
         # 创建一个logger
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)  # 指定最低的日志级别 critical > error > warning > info > debug
+        self.logger.setLevel(logging.DEBUG)  # 指定最低的日志级别 critical > error > warning > info > debug
 
         # 创建一个handler，用于写入日志文件
         log_time = time.strftime("%Y-%m-%d", time.localtime(time.time()))
-        # log_path = os.getcwd() + "/logs/"
-        log_path = os.path.split(os.path.dirname(__file__))[0]
-        log_name = os.path.join(log_path, "{}.log".format(log_time))
+        log_name = Path(__file__).parent.parent.joinpath("{}.log".format(log_time))
         #  这里进行判断，如果logger.handlers列表为空，则添加，否则，直接去写日志，解决重复打印的问题
         if not self.logger.handlers:
             # FileHandler
@@ -67,17 +66,16 @@ class Logger(object):
             fh_formatter = logging.Formatter(
                 '[%(asctime)s] %(filename)s -> %(funcName)s line:%(lineno)d [%(levelname)s] %(message)s')
             fh.setFormatter(fh_formatter)
-
             # StreamHandler
             ch = logging.StreamHandler(sys.stdout)
-            ch.setLevel(logging.DEBUG)
+            ch.setLevel(logging.INFO)
             # 定义handler的输出格式, 控制台输出使用 ColorFormatter
             formatter = ColorFormatter('%(levelname)s %(message)s')
             ch.setFormatter(formatter)
             # 按行打印 list
-            ch.addFilter(ListFilter())
 
             # 给logger添加handler
+            self.logger.addFilter(ListFilter())
             self.logger.addHandler(fh)
             self.logger.addHandler(ch)
 
@@ -99,10 +97,9 @@ class Logger(object):
 
 if __name__ == '__main__':
     log = Logger()
-    a = ['dfdfasdfas', 'sdfasdfdf', 'dfdasdfasdff']
-    d = {'list': a}
-    log.info("This shows extra", extra=d)
-    log.info("info")
-    log.error("error")
-    log.warning("warning")
-    log.critical("critical")
+    # d = {'list': ['str1', 'str2', 'str3']}
+    # log.info("This shows extra", extra=d)
+    # log.debug("info")
+    # log.error("error")
+    # log.warning("warning")
+    # log.critical("critical")

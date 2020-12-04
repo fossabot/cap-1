@@ -1,8 +1,8 @@
+from core.cap import Cap
 from core.cli import (
     load_config,
     check_input
 )
-from core.cap import Cap
 
 
 def main():
@@ -11,7 +11,7 @@ def main():
     cfg = load_config()
     target = check_input(cfg)
     cap = Cap(target, cfg)
-    cap.process()
+    metadata = cap.process()
 
 
 if __name__ == "__main__":

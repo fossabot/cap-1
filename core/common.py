@@ -1,5 +1,4 @@
 import os
-import re
 import shutil
 import sys
 from pathlib import Path
@@ -31,29 +30,30 @@ def free_proxy_pool(cfg):
     return cfg
 
 
-def number_parser(file_path: str):
+def number_parser(file: Path):
+    filename = file.name
     # //TODO 还没看
+    pass
     # file_path = os.path.basename(file_path)
-    file_path = Path(file_path).resolve()
-    # return file_path
-    try:
-        if '-' in file_path or '_' in file_path:
-            file_path = file_path.replace("_", '-')
-            filename = str(
-                re.sub(r"\[\d{4}-\d{1,2}-\d{1,2}\] - ", "", file_path))  # 去除文件名中时间
-            file_number = re.search(r'\w+-\w+', filename, re.A).group()
-            return file_number
-        else:  # 提取不含减号-的番号，FANZA CID
-            try:
-                return str(
-                    re.findall(r'(.+?)\.',
-                               str(re.search('([^<>/\\\\|:""\\*\\?]+)\\.\\w+$', file_path).group()))).strip(
-                    "['']").replace('_', '-')
-            except re.error:
-                return re.search(r'(.+?)\.', file_path)[0]
-    except Exception as e:
-        print('[-]' + str(e))
-        return
+    # # return file_path
+    # try:
+    #     if '-' in file_path or '_' in file_path:
+    #         file_path = file_path.replace("_", '-')
+    #         filename = str(
+    #             re.sub(r"\[\d{4}-\d{1,2}-\d{1,2}\] - ", "", file_path))  # 去除文件名中时间
+    #         file_number = re.search(r'\w+-\w+', filename, re.A).group()
+    #         return file_number
+    #     else:  # 提取不含减号-的番号，FANZA CID
+    #         try:
+    #             return str(
+    #                 re.findall(r'(.+?)\.',
+    #                            str(re.search('([^<>/\\\\|:""\\*\\?]+)\\.\\w+$', file_path).group()))).strip(
+    #                 "['']").replace('_', '-')
+    #         except re.error:
+    #             return re.search(r'(.+?)\.', file_path)[0]
+    # except Exception as e:
+    #     print('[-]' + str(e))
+    #     return
 
 
 def create_failed_folder(cfg) -> object:
@@ -80,20 +80,10 @@ def get_video_path_list(folder_path, cfg):
     Returns:
 
     """
-    path_list = []
-    file_type = tuple(['.mp4', '.avi', '.rmvb', '.wmv', '.mov',
-                       '.mkv', '.flv', '.ts', '.webm', '.iso'])
-
-    for root, dirs, files in os.walk(folder_path, topdown=True):
-        # exclude folder
-        dirs[:] = [d for d in dirs if d not in cfg.exclude.folder]
-        # filter
-        files[:] = [f for f in files if f.lower().endswith(file_type)]
-
-        for file in files:
-            path_list.append(os.path.join(root, file))
-
-    return path_list
+    folder = Path(folder_path)
+    file_type = ['.mp4', '.avi', '.rmvb', '.wmv', '.mov', '.mkv', '.flv', '.ts', '.webm', '.iso']
+    excluded = [folder.joinpath(e) for e in cfg.exclude.folders]
+    return [f for f in folder.rglob('*') if f.suffix in file_type and not [a for a in excluded if a in f.parents]]
 
 
 def check_data_state(data) -> object:

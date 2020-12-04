@@ -94,7 +94,7 @@ class CapBase:
                 # logger.info("mkdir folder %s".format(folder_path))
                 return folder_path
             except OSError:
-                logger.info("fail to mkdir folder: {}".format(folder_path))
+                logger.info(f'fail to mkdir folder: {folder_path}')
 
     def move_rename_video(self, folder_path, data):
         """
@@ -112,7 +112,7 @@ class CapBase:
             shutil.move(self.file_path, new_file_path)
             logger.info("move: {} to folder: {} ".format(self.file_path, folder_path))
         except Exception as exc:
-            logger.error("fail to move" + str(exc))
+            logger.error(f'fail to move:{str(exc)}')
 
         return new_file_name
 
@@ -148,10 +148,10 @@ class CapBase:
 
 class Cap:
     def __init__(self, target, cfg):
-        if isinstance(target, dict):
+        if target['id']:
             self.files = target['file']
             self.id = target['id']
-        if isinstance(target, list):
+        else:
             self.files = target
             self.id = [number_parser(f) for f in target]
         self.cfg = cfg
@@ -162,4 +162,5 @@ class Cap:
         target = dict(zip(self.files, self.id))
         for f, n in target.items():
             cap = CapBase(f, n, self.cfg)
-            cap()
+            metadata = cap()
+            return metadata
