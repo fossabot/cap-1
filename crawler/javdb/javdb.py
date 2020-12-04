@@ -100,7 +100,7 @@ class JavdbBuilder:
     def __call__(self, number, cfg):
         if not self._instance:
             self._instance = Javdb(number, cfg)
-        return self._instance
+        return self._instance.get_data()
 
 
 if __name__ == "__main__":

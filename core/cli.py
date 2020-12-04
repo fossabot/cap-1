@@ -97,11 +97,11 @@ def check_input(cfg):
                 folders.append(i)
                 logger.info("the videos in the following folders will be searched soon：", extra={'list': folders})
                 files = sum([get_video_path_list(f, cfg) for f in folders], [])
-                if cfg.common.debug:
+                if cfg.common.debug and len(files) > 0:
                     logger.debug('video list:', extra={'list': files})
             else:
                 logger.info(f'folder path error: {i}')
-    return {"file": files, "number": ids}
+    return {"file": files, "id": ids}
 
 
 if __name__ == "__main__":

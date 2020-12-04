@@ -1,10 +1,10 @@
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
 
 import requests
-# from dataclasses import asdict
 from lxml.etree import Element, SubElement, ElementTree
 
 from utils.logger import Logger
@@ -31,36 +31,72 @@ def free_proxy_pool(cfg):
 
 
 def number_parser(file: Path):
-    filename = file.name
-    # //TODO 还没看
-    pass
-    # file_path = os.path.basename(file_path)
-    # # return file_path
-    # try:
-    #     if '-' in file_path or '_' in file_path:
-    #         file_path = file_path.replace("_", '-')
-    #         filename = str(
-    #             re.sub(r"\[\d{4}-\d{1,2}-\d{1,2}\] - ", "", file_path))  # 去除文件名中时间
-    #         file_number = re.search(r'\w+-\w+', filename, re.A).group()
-    #         return file_number
-    #     else:  # 提取不含减号-的番号，FANZA CID
-    #         try:
-    #             return str(
-    #                 re.findall(r'(.+?)\.',
-    #                            str(re.search('([^<>/\\\\|:""\\*\\?]+)\\.\\w+$', file_path).group()))).strip(
-    #                 "['']").replace('_', '-')
-    #         except re.error:
-    #             return re.search(r'(.+?)\.', file_path)[0]
-    # except Exception as e:
-    #     print('[-]' + str(e))
-    #     return
+    def del_extra(st) -> str:
+        regex_list = [
+            r'[\u4e00-\u9fa5]',
+            r'cd\d+',
+            r'-\d{4}-\d{1,2}-\d{1,2}',
+            r'\d{4}-\d{1,2}-\d{1,2}-'
+        ]
+        for regex in regex_list:
+            st = re.sub(regex, '', st, flags=re.I)
+        st = st.strip('-cC ')
+        return st
+
+    filename: str = del_extra(file.stem)
+
+    # 提取欧美番号 sexart.11.11.11, 尽可能匹配人名
+    searchobj1 = re.search(r'^\D+\d{2}\.\d{2}\.\d{2}', filename)
+    if searchobj1:
+        r_searchobj1 = re.search(r'^\D+\d{2}\.\d{2}\.\d{2}\.\D+', filename)
+        if r_searchobj1:
+            return r_searchobj1.group()
+        else:
+            return searchobj1.group()
+
+    # 提取xxx-av-11111
+    searchobj2 = re.search(r'XXX-AV-\d{4,}', filename.upper())
+    if searchobj2:
+        return searchobj2.group()
+
+    def regular_id(st) -> str:
+        search_regex = [
+            'FC2-\d{5,}',  # 提取类似fc2-111111番号
+            '[a-zA-Z]+-\d+',  # 提取类似mkbd-120番号
+            '\d+[a-zA-Z]+-\d+',  # 提取类似259luxu-1111番号
+            '[a-zA-Z]+-[a-zA-Z]\d+',  # 提取类似mkbd-s120番号
+            '\d+-[a-zA-Z]+',  # 提取类似 111111-MMMM 番号
+            '\d+-\d+',  # 提取类似 111111-000 番号
+            '\d+_\d+'  # 提取类似 111111_000 番号
+        ]
+        for regex in search_regex:
+            searchobj = re.search(regex, st)
+            if searchobj:
+                return searchobj.group()
+            else:
+                continue
+
+    if '-' in filename or '_' in filename:
+        if regular_id(filename):
+            return regular_id(filename)
+    else:
+        # filename = re.sub(u"\\(.*?\\)|{.*?}|\\[.*?]", "", filename)
+        # filename = filename.translate({ord(c): '' for c in set(string.punctuation)})
+        try:
+            find_num = re.findall(r'\d+', filename)[0]
+            find_char = re.findall(r'\D+', filename)[0]
+            return find_char + '-' + find_num
+        except re.error:
+            logger.warning(fr'fail to match id: \n{file.name}\n try input manualy')
+            return input()
 
 
-def create_failed_folder(cfg) -> object:
+def create_failed_folder(cfg):
     """
     create failed folder
     Args:
         cfg:
+    // TODO 跨文件夹操作和跨盘符操作(配置中填写绝对路径麻烦，相对路径，创建在哪里)
     """
     faild_folder = Path(cfg.common.failed_output_folder)
     try:
@@ -98,21 +134,18 @@ def check_data_state(data) -> object:
         return True
 
 
-def replace_date(data, location_rule) -> str:
+def replace_date(data, location_rule: str) -> str:
     """
     replace path or name with the metadata
     Returns:
         str:
     """
-    # TODO 更换了数据暂存方式，需要更改
-    # replace_data_list = [i for i in list(
-    #     asdict(data).keys()) if i in location_rule]
-    # for s in replace_data_list:
-    #     location_rule = location_rule.replace(s, asdict(data)[s])
+    replace_data_list = [i for i in data.keys() if i in location_rule]
+    for s in replace_data_list:
+        location_rule = location_rule.replace(s, data[s])
     # # Remove illegal characters
-    # res = '[\/\\\:\*\?\"\<\>\|]'
-    # location_rule = re.sub(res, "_", location_rule)
-    # return location_rule
+    res = '[\/\\\:\*\?\"\<\>\|]'
+    return re.sub(res, "_", location_rule)
 
 
 def check_name_length(name, max_title_len) -> str:
@@ -140,7 +173,7 @@ def check_name_length(name, max_title_len) -> str:
         return name
 
 
-def move_to_failed_folder(file_path, cfg):
+def move_to_failed_folder(file_path: Path, cfg):
     """
     move video file searching failed to failed folder
     Args:
@@ -149,7 +182,7 @@ def move_to_failed_folder(file_path, cfg):
     """
     try:
         shutil.move(file_path, cfg.common.failed_output_folder)
-        logger.info("move %s to failed folder".format(os.path.split(file_path)[1]))
+        logger.info("move {} to failed folder".format(os.path.split(file_path)[1]))
     except Exception as error_info:
         logger.error("fail to move file" + str(error_info))
 

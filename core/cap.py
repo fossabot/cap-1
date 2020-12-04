@@ -37,7 +37,7 @@ class CapBase:
     """
 
     def __init__(self, path, number, cfg):
-        self.file_path: str = path
+        self.file_path: Path = path
         self.number: str = number
         self.data = None
         self.cfg = cfg
@@ -58,15 +58,22 @@ class CapBase:
         # 自动注册 crawler 文件夹中的爬虫类
         services = auto_register_service()
         while not priority.empty():
+            # noinspection PyBroadException
             try:
                 self.data = services.get(priority.pop(), self.number, self.cfg)
                 if check_data_state(self.data):
                     return self.data
                 else:
                     continue
+            # 这里太宽泛了，很容易跳到这里，添加 finally 来移动文件夹。
+            except Exception as exc:
+                logger.error(f'No data obtained{exc}')
+                continue
             finally:
-                move_to_failed_folder(self.file_path, self.cfg)
-                logger.error("No data obtained")
+                if not self.data:
+                    move_to_failed_folder(self.file_path, self.cfg)
+                else:
+                    pass
 
     def create_folder(self, data):
         """
@@ -96,7 +103,7 @@ class CapBase:
             except OSError:
                 logger.info(f'fail to mkdir folder: {folder_path}')
 
-    def move_rename_video(self, folder_path, data):
+    def move_rename_video(self, folder_path: Path, data) -> Path:
         """
         替换数据，检查长度，移动和重命名文件，
         Args:
@@ -116,7 +123,7 @@ class CapBase:
 
         return new_file_name
 
-    def img_utils(self, created_folder, metadata):
+    def img_utils(self, created_folder: Path, metadata):
         """
         download and process pic
         处理和下载图片
@@ -128,7 +135,7 @@ class CapBase:
         request = CrawlerCommon(self.cfg)
         request.download(metadata.poster, Path(created_folder).joinpath('poster.name'))
 
-    def create_nfo(self, new_file_name, metadata):
+    def create_nfo(self, new_file_name: Path, metadata):
         """
         创建 nfo 文件
         Returns:
@@ -152,8 +159,8 @@ class Cap:
             self.files = target['file']
             self.id = target['id']
         else:
-            self.files = target
-            self.id = [number_parser(f) for f in target]
+            self.files = target['file']
+            self.id = [number_parser(f) for f in target['file']]
         self.cfg = cfg
         # if self.cfg.proxy.enablefree:
         #     self.cfg = free_proxy_pool(cfg)

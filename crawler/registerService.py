@@ -13,8 +13,8 @@ def auto_register_service():
 
     """
     service = WebProvider()
-    # 搜索二级目录中 py 文件
-    modules = sum([list(folder.glob('*.py')) for folder in Path.cwd().iterdir()], [])
+    # 搜索二级目录中 py 文件 （Path.cwd()似乎得到的是main文件地址）
+    modules = sum([list(folder.glob('*.py')) for folder in Path(__file__).parent.iterdir()], [])
     for module in modules:
         # eg. crawler.javbus.javbus
         module_object = import_module('crawler.' + module.parent.name + '.' + module.stem)
@@ -34,11 +34,11 @@ class WebProvider:
     def register_builder(self, key, builder):
         self._builders[key] = builder
 
-    def create(self, key, **kwargs):
+    def create(self, key, *args, **kwargs):
         builder = self._builders.get(key)
         if not builder:
             raise ValueError(key)
-        return builder(**kwargs)
+        return builder(*args, **kwargs)
 
-    def get(self, service_id, **kwargs):
-        return self.create(service_id, **kwargs)
+    def get(self, service_id, *args, **kwargs):
+        return self.create(service_id, *args, **kwargs)

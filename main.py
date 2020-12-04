@@ -12,6 +12,10 @@ def main():
     target = check_input(cfg)
     cap = Cap(target, cfg)
     metadata = cap.process()
+    # 测试数据获取
+    # for i, k in metadata.items():
+    #     print(i)
+    #     print(k)
 
 
 if __name__ == "__main__":

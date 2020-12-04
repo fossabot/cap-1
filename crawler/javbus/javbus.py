@@ -1,7 +1,9 @@
 import re
 from urllib.parse import urljoin
+
 from lxml import etree
 from urllib3.exceptions import HTTPError
+
 from crawler.crawlerCommon import (
     CrawlerCommon,
     Metadata
@@ -18,7 +20,6 @@ class Javbus(CrawlerCommon):
 
     def __init__(self, number, cfg):
         super().__init__(cfg)
-        # self.number = number
         for url in self._url:
             try:
                 self.response = self.response(urljoin(url, number)).text
@@ -28,7 +29,7 @@ class Javbus(CrawlerCommon):
         self.html = etree.fromstring(self.response, etree.HTMLParser())
         self.data = Metadata()
 
-    def get_data_(self):
+    def get_data(self):
         for key, fun in Javbus.__dict__.items():
             if type(fun).__name__ == 'function' and "_" not in key:
                 fun(self)
@@ -56,9 +57,9 @@ class Javbus(CrawlerCommon):
             self.data.number = str(i.xpath('//p[1]/span[2]/text()')).strip(" ['']")
             runtime = i.xpath('//p[position()>1 and position()<4]/text()')
             # release
-            self.data.release = runtime[0].strip(" ['']分鐘")
+            self.data.release = runtime[0]
             # runtime
-            self.data.runtime = runtime[1]
+            self.data.runtime = runtime[1].strip(" ['']分鐘")
             ret4 = i.xpath('ul/div/li//div[@class="star-name"]/a/text()')
             # print(ret4)
             # actor
@@ -110,11 +111,4 @@ class JavbusBuilder:
     def __call__(self, number, cfg):
         if not self._instance:
             self._instance = Javbus(number, cfg)
-        return self._instance
-
-
-if __name__ == "__main__":
-    pass
-    # jav = Javbus("", cfg)
-    # data = jav.get_data_()
-    # print(data.title)
+        return self._instance.get_data()
