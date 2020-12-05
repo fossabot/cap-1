@@ -1,13 +1,13 @@
-import shutil
 from pathlib import Path
 
-from core.common import (
+from core.comm import (
     number_parser,
     create_failed_folder,
     check_data_state,
     replace_date,
     check_name_length,
-    move_to_failed_folder,
+    mv,
+    mkdir,
     write_nfo
 )
 from crawler.crawlerCommon import (
@@ -20,13 +20,15 @@ from utils.logger import Logger
 logger = Logger()
 try:
     import concurrent.futures
-except ImportError as e:
+except ImportError:
     # print (e)
     import threading
 
     poolSupport = False
 else:
     poolSupport = True
+
+thePoolsize = 5
 
 
 class CapBase:
@@ -36,13 +38,12 @@ class CapBase:
     获取元数据 -> 创建文件夹 -> 重命名和移动文件 -> 下载和处理图片 -> 创建 nfo
     """
 
-    def __init__(self, path, number, cfg):
-        self.file_path: Path = path
+    def __init__(self, path, number, folder, cfg):
+        self.file = path
         self.number: str = number
         self.data = None
+        self.folder = folder
         self.cfg = cfg
-        if not self.cfg.common.debug:
-            create_failed_folder(self.cfg)
 
     @property
     def get_metadata(self):
@@ -71,19 +72,22 @@ class CapBase:
                 continue
             finally:
                 if not self.data:
-                    move_to_failed_folder(self.file_path, self.cfg)
+                    mv(self.file, self.folder, flag='fail')
                 else:
                     pass
 
-    def create_folder(self, data):
+    def create_folder_move_video(self, folder_path, data):
         """
         use metadate replace location_rule, create folder
         使用爬取的元数据替换路径规则，再创建文件。
         根据 / 划分层级，检查每层文件夹的名称长度
         Args:
+            folder_path:
             data: metadata
         """
         location_rule = self.cfg.name_rule.location_rule
+        naming_rule = self.cfg.name_rule.naming_rule
+        max_title_len = self.cfg.name_rule.max_title_len
         # If the number of actors is more than 5, take the first two
         # 如果演员数量大于5 ，则取前两个
         if len(data.actor.split(',')) >= 5:
@@ -93,34 +97,16 @@ class CapBase:
         # mkdir folder by level
         for name in location_rule.split('/'):
             # check length of name
-            name = check_name_length(name, self.cfg.name_rule.max_title_len)
+            name = check_name_length(name, max_title_len)
             output_folder = Path(self.cfg.name_rule.success_output_folder).resolve()
             folder_path = output_folder.joinpath(name)
-            try:
-                folder_path.mkdir(exist_ok=True)
-                # logger.info("mkdir folder %s".format(folder_path))
-                return folder_path
-            except OSError:
-                logger.info(f'fail to mkdir folder: {folder_path}')
+            mkdir(folder_path)
 
-    def move_rename_video(self, folder_path: Path, data) -> Path:
-        """
-        替换数据，检查长度，移动和重命名文件，
-        Args:
-            folder_path:
-            data:
-        """
+        # 替换数据，检查长度，移动和重命名文件，
         # check length of name
-        naming_rule = check_name_length(self.cfg.name_rule.naming_rule, self.cfg.name_rule.max_title_len)
-        # replace data ,get new file name
+        naming_rule = check_name_length(naming_rule, max_title_len)
         new_file_name = replace_date(data, naming_rule)
-        new_file_path = Path(folder_path).joinpath(new_file_name)
-        try:
-            shutil.move(self.file_path, new_file_path)
-            logger.info("move: {} to folder: {} ".format(self.file_path, folder_path))
-        except Exception as exc:
-            logger.error(f'fail to move:{str(exc)}')
-
+        mv(self.file, folder_path.joinpath(new_file_name))
         return new_file_name
 
     def img_utils(self, created_folder: Path, metadata):
@@ -155,19 +141,72 @@ class CapBase:
 
 class Cap:
     def __init__(self, target, cfg):
-        if target['id']:
-            self.files = target['file']
-            self.id = target['id']
-        else:
-            self.files = target['file']
-            self.id = [number_parser(f) for f in target['file']]
-        self.cfg = cfg
-        # if self.cfg.proxy.enablefree:
-        #     self.cfg = free_proxy_pool(cfg)
+        if isinstance(target, list):
+            self.file = target[0]
+            self.id = target[1]
 
-    def process(self):
-        target = dict(zip(self.files, self.id))
-        for f, n in target.items():
-            cap = CapBase(f, n, self.cfg)
-            metadata = cap()
-            return metadata
+        if isinstance(target, dict):
+            self.folder, = target
+            self.files, = target.values()
+            self.ids = [number_parser(f) for f in self.files]
+
+        self.failed = self.failed_folder()
+        self.cfg = cfg
+
+    def failed_folder(self):
+        if not self.cfg.common.debug:
+            if self.folder:
+                return create_failed_folder(self.folder, self.cfg)
+            else:
+                return create_failed_folder(self.file, self.cfg)
+
+    def check_number_parser(self, target):
+        logger.info('file pointing number', extra={'dict': target})
+        flag = input('change number(c) or continue(enter)?')
+        if flag.lower() == 'c':
+            file_id = input('use [ <Serial_number><space>number ], eg 4 ABP-454\n')
+            try:
+                target['id'][file_id.split()[0] - 1] = file_id.split()[1]
+                self.check_number_parser(target)
+            except KeyError:
+                raise
+        else:
+            return target
+
+    def mutil_process(self, target):
+        # // TODO 多线程要怎么搞呢
+        index = 0
+        if not poolSupport:
+            threads = []
+            for f, n in target.items():
+                cap = CapBase(f, n, self.failed, self.cfg)
+                threads.append(threading.Thread(target=cap()))
+                index += 1
+            for t in threads:
+                t.setDaemon(True)
+                t.start()
+                t.join()
+        else:
+            futures = []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=thePoolsize) as pool:
+                for f, n in target.items():
+                    cap = CapBase(f, n, self.failed, self.cfg)
+                    futures.append(pool.submit(cap()))
+                    index += 1
+                result = concurrent.futures.wait(
+                    futures, timeout=None, return_when='ALL_COMPLETED')
+                suc = 0
+                for f in result.done:
+                    if f.result():
+                        suc += 1
+                        logger.info('Total number of search: ')
+
+    def start(self):
+        if self.file:
+            cap = CapBase(self.file, self.id, self.failed, self.cfg)
+            return cap()
+        else:
+            target = dict(zip(self.files, self.ids))
+            if self.cfg.debug.check_number_parser:
+                target = self.check_number_parser(target)
+                self.mutil_process(target)

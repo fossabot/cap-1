@@ -3,7 +3,7 @@ import textwrap
 from pathlib import Path
 
 from config.config import get_cfg_defaults
-from core.common import get_video_path_list
+from core.comm import get_video_path_list
 from utils.logger import Logger
 
 logger = Logger()
@@ -25,19 +25,13 @@ def set_argparse():
     > ./cap folder_path
 
     ¶ please take your number if single file, use the arrows to point to number
-    > ./cap file_path->number
+    > ./cap file->number
 
     ¶ specifying configuration files is no problem either.
     > ./cap -c configuration_file
 
-    ¶ actually, you can still do this.
-    > ./cap file_path->number another_file_path->number
-
-    ¶ if you want, that's fine too.
-    > ./cap folder_path another_folder_path
-
     """, '+', lambda line: True))
-    parser.add_argument('p', default=['G:/a'], nargs='*', help="file_path->number")
+    parser.add_argument('p', default=['G:/a'], nargs='?', help="file->number")
     parser.add_argument('-c', default="config.yaml", help="configuration_file_path")
 
     return parser.parse_args()
@@ -76,32 +70,29 @@ def check_input(cfg):
     sort command line input
     Args:
         cfg: config
-
     Returns:
-
     """
     parser = set_argparse()
-    ids, files, folders = [], [], []
-    for i in parser.p:
-        # split means pointing number
-        try:
-            _file, _id = i.split('->')
-            if Path(_file).is_file():
-                files.append(Path(_file))
-                ids.append(_id)
-                logger.info("The following videos will be searched soon:", extra={'list': files})
-            else:
-                logger.info(f'file path error: {i}')
-        except ValueError:
-            if Path(i).is_dir():
-                folders.append(i)
-                logger.info("the videos in the following folders will be searched soon：", extra={'list': folders})
-                files = sum([get_video_path_list(f, cfg) for f in folders], [])
-                if cfg.common.debug and len(files) > 0:
-                    logger.debug('video list:', extra={'list': files})
-            else:
-                logger.info(f'folder path error: {i}')
-    return {"file": files, "id": ids}
+    folder_files = {}
+    # split means pointing number
+    try:
+        _file, _id = parser.p.split('->')
+        file = Path(_file)
+        if file.is_file():
+            logger.info(f'The following video: {_file} -> {_id}will be searched soon')
+            return [file, _id]
+        else:
+            logger.info(f'file path error: {_file}')
+    except ValueError:
+        path = Path(parser.p).resolve()
+        if path.is_dir():
+            files = [get_video_path_list(f, cfg) for f in path]
+            if cfg.common.debug and len(files) > 0:
+                logger.debug(f'the videos in folder: {str(path)} will be searched soon：', extra={'list': files})
+            folder_files[str(path)] = files
+            return folder_files
+        else:
+            logger.info(f'folder path error: {str(path)}')
 
 
 if __name__ == "__main__":

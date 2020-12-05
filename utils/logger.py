@@ -40,6 +40,11 @@ class ListFilter(logging.Filter):
             record.msg = record.msg + f'\n{"+ "}{"-" * width}{" +"}\n'
             record.msg += ''.join([f'|{" "}{line:<{width}}{" "}|\n' for line in list(map(str, record.list))])
             record.msg = record.msg + f'{"+ "}{"-" * width}{" +"}'
+        if hasattr(record, 'dict'):
+            count = 1
+            for k, v in record.dict.items():
+                record.msg += f'\n No.{count} file: {k} -> id: {v} '
+                count += 1
         return super(ListFilter, self).filter(record)
 
 
@@ -98,7 +103,8 @@ class Logger(object):
 if __name__ == '__main__':
     log = Logger()
     # d = {'list': ['str1', 'str2', 'str3']}
-    # log.info("This shows extra", extra=d)
+    d = {'dict': {'one': 'test_one', 'two': 'test_two'}}
+    log.info("This shows extra", extra=d)
     # log.debug("info")
     # log.error("error")
     # log.warning("warning")

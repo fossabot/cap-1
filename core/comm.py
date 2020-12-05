@@ -1,10 +1,9 @@
-import os
 import re
 import shutil
 import sys
 from pathlib import Path
 
-import requests
+# import requests
 from lxml.etree import Element, SubElement, ElementTree
 
 from utils.logger import Logger
@@ -12,26 +11,29 @@ from utils.logger import Logger
 logger = Logger()
 
 
-def free_proxy_pool(cfg):
-    """
-    https://github.com/jhao104/proxy_pool
-    get free proxy
-    store proxy to config
-    Args:
-        cfg:
-    Returns:
-
-    """
-    all_proxy = requests.get("http://118.24.52.95/get_all/").json()
-    proxy = []
-    for p in all_proxy:
-        proxy.append(p.get('proxy'))
-    cfg.proxy.freepool = proxy
-    return cfg
+# def free_proxy_pool(cfg):
+#     """
+#     https://github.com/jhao104/proxy_pool
+#     get free proxy
+#     store proxy to config
+#     Args:
+#         cfg:
+#     Returns:
+#
+#     """
+#     all_proxy = requests.get("http://118.24.52.95/get_all/").json()
+#     proxy = []
+#     for p in all_proxy:
+#         proxy.append(p.get('proxy'))
+#     cfg.proxy.freepool = proxy
+#     return cfg
 
 
 def number_parser(file: Path):
     def del_extra(st) -> str:
+        """
+        删除汉字，cd1.. ，cC ,时间戳
+        """
         regex_list = [
             r'[\u4e00-\u9fa5]',
             r'cd\d+',
@@ -72,13 +74,14 @@ def number_parser(file: Path):
         for regex in search_regex:
             searchobj = re.search(regex, st)
             if searchobj:
-                return searchobj.group()
+                return searchobj.group().replace('_', '-')
             else:
                 continue
 
     if '-' in filename or '_' in filename:
-        if regular_id(filename):
-            return regular_id(filename)
+        filename = regular_id(filename)
+        if filename:
+            return filename
     else:
         # filename = re.sub(u"\\(.*?\\)|{.*?}|\\[.*?]", "", filename)
         # filename = filename.translate({ord(c): '' for c in set(string.punctuation)})
@@ -87,39 +90,42 @@ def number_parser(file: Path):
             find_char = re.findall(r'\D+', filename)[0]
             return find_char + '-' + find_num
         except re.error:
-            logger.warning(fr'fail to match id: \n{file.name}\n try input manualy')
+            logger.warning(f'fail to match id: \n{file.name}\n try input manualy')
             return input()
 
 
-def create_failed_folder(cfg):
+def create_failed_folder(search_path, needed_create):
     """
     create failed folder
     Args:
-        cfg:
-    // TODO 跨文件夹操作和跨盘符操作(配置中填写绝对路径麻烦，相对路径，创建在哪里)
+        needed_create:
+        search_path:
     """
-    faild_folder = Path(cfg.common.failed_output_folder)
-    try:
-        faild_folder.mkdir(exist_ok=True)
-    except OSError as exc:
-        logger.error("fail to create folder: {}".format(str(exc)))
-        sys.exit()
+    faild_folder = Path(needed_create).resolve()
+
+    # 如果配置文件中路径不是绝对路径
+    if not faild_folder.is_absolute():
+        created = search_path.parents.joinpath(needed_create)
+        mkdir(created)
+        return created
+    else:
+        mkdir(faild_folder)
+        return faild_folder
 
 
-def get_video_path_list(folder_path, cfg):
+def get_video_path_list(path, cfg):
     """
     search video according to path, exclude excluded folder
     Args:
-        folder_path:
-        cfg:
+        path: 需要搜寻的文件夹
+        cfg: config
 
     Returns:
 
     """
-    folder = Path(folder_path)
-    file_type = ['.mp4', '.avi', '.rmvb', '.wmv', '.mov', '.mkv', '.flv', '.ts', '.webm', '.iso']
-    excluded = [folder.joinpath(e) for e in cfg.exclude.folders]
-    return [f for f in folder.rglob('*') if f.suffix in file_type and not [a for a in excluded if a in f.parents]]
+    file_type = cfg.common.file_type
+    excluded = [path.joinpath(e) for e in cfg.exclude.folder]
+    return [f for f in path.rglob('*') if f.suffix in file_type and not [a for a in excluded if a in f.parents]]
 
 
 def check_data_state(data) -> object:
@@ -173,18 +179,27 @@ def check_name_length(name, max_title_len) -> str:
         return name
 
 
-def move_to_failed_folder(file_path: Path, cfg):
+def mv(target, dest, flag: str = None):
     """
     move video file searching failed to failed folder
     Args:
-        file_path: org file path
-        cfg: config
+        target: org file path
+        dest:
+        flag:
     """
     try:
-        shutil.move(file_path, cfg.common.failed_output_folder)
-        logger.info("move {} to failed folder".format(os.path.split(file_path)[1]))
+        shutil.move(target, dest)
+        logger.info(fr'move {target.name} to {flag} folder')
     except Exception as error_info:
         logger.error("fail to move file" + str(error_info))
+
+
+def mkdir(target):
+    try:
+        target.mkdir()
+    except OSError as exc:
+        logger.error("fail to create folder: {}".format(str(exc)))
+        sys.exit()
 
 
 def write_nfo(file_path, data, cfg):

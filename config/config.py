@@ -11,11 +11,15 @@ _C.common.failed_move = 1
 _C.common.auto_exit = 1
 _C.common.transalte_to_sc = 1
 
+_C.debug = CN()
+_C.debug.enable = True
+_C.debug.check_number_parser = True
+
 _C.proxy = CN()
 _C.proxy.enable = False
 _C.proxy.type = "socks5"
 _C.proxy.host = ""
-_C.proxy.enablefree = True
+_C.proxy.enablefree = False
 
 _C.request = CN()
 _C.request.status_forcelist = ["413", "429", "500", "502", "503", "504"]
@@ -43,6 +47,7 @@ _C.crawler.retry = 3
 
 # 其他默认设置选项
 _C.proxy.support = ["http", "socks5", "socks5h"]
+_C.common.file_type = ['.mp4', '.avi', '.rmvb', '.wmv', '.mov', '.mkv', '.flv', '.ts', '.webm', '.iso']
 
 
 def get_cfg_defaults():

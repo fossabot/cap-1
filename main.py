@@ -11,7 +11,7 @@ def main():
     cfg = load_config()
     target = check_input(cfg)
     cap = Cap(target, cfg)
-    metadata = cap.process()
+    metadata = cap.start()
     # 测试数据获取
     # for i, k in metadata.items():
     #     print(i)
