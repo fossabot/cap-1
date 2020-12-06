@@ -1,3 +1,5 @@
+import time
+
 from core.cap import Cap
 from core.cli import (
     load_config,
@@ -8,14 +10,13 @@ from core.cli import (
 def main():
     """main entry"""
     # get command input, load config file
+    start_time = time.perf_counter()
     cfg = load_config()
     target = check_input(cfg)
     cap = Cap(target, cfg)
-    metadata = cap.start()
-    # 测试数据获取
-    # for i, k in metadata.items():
-    #     print(i)
-    #     print(k)
+    cap.start()
+    end_time = time.perf_counter()
+    print(f'search video in {end_time - start_time} seconds')
 
 
 if __name__ == "__main__":

@@ -33,13 +33,23 @@ class ColorFormatter(logging.Formatter):
 
 
 class ListFilter(logging.Filter):
+    """
     # https://stackoverflow.com/questions/22934616/multi-line-logging-in-python
+    The other optional keyword argument is extra which can be used to pass a dictionary
+    which is used to populate the __dict__ of the LogRecord created for the logging event with user-defined attributes.
+    """
+
     def filter(self, record):
+        # extra = {'list': List}
+        # 闲着没事，顺便画了个方框
+        # 增加 map(str, record.list),很大概率传入 Path 对象
         if hasattr(record, 'list'):
             width = max(map(len, list(map(str, record.list))))
             record.msg = record.msg + f'\n{"+ "}{"-" * width}{" +"}\n'
             record.msg += ''.join([f'|{" "}{line:<{width}}{" "}|\n' for line in list(map(str, record.list))])
             record.msg = record.msg + f'{"+ "}{"-" * width}{" +"}'
+        # extra = {'dict': Dict}
+        # 用 count 记数，增加序号，用于检查番号提取（特定需求）
         if hasattr(record, 'dict'):
             count = 1
             for k, v in record.dict.items():
@@ -52,7 +62,8 @@ class Logger(object):
     def __init__(self):
         """
         指定保存日志的文件路径，日志级别，以及调用文件
-        将日志存入到指定的文件中
+        日志等级 debug 只写入log文件，其他都会在控制台打印
+        只有控制台输出有颜色
         """
 
         # 创建一个logger

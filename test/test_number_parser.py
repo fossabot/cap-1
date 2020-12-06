@@ -1,0 +1,148 @@
+import re
+import unittest
+
+
+def number_parser(filename):
+    def del_extra(st) -> str:
+        """
+        删除cd1.. ，时间戳,
+        """
+        regex_list = [
+            # r'[\u4e00-\u9fa5]+',
+            # r'[^A-Za-z0-9-_.()]',
+            r'cd\d$',  # 删除cd1
+            r'-\d{4}-\d{1,2}-\d{1,2}',  # 日期
+            r'\d{4}-\d{1,2}-\d{1,2}-',
+            r'1080p',
+            r'1pon',
+            r'.com',
+            r'nyap2p',
+            r'22-sht.me',
+            r'xxx'
+        ]
+        for regex in regex_list:
+            st = re.sub(regex, '', st, flags=re.I)
+        st = st.rstrip('-cC ')
+        return st
+
+    filename = del_extra(filename)
+
+    # 提取欧美番号 sexart.11.11.11, 尽可能匹配人名
+    searchobj1 = re.search(r'^\D+\d{2}\.\d{2}\.\d{2}', filename)
+    if searchobj1:
+        r_searchobj1 = re.search(r'^\D+\d{2}\.\d{2}\.\d{2}\.\D+', filename)
+        if r_searchobj1:
+            return r_searchobj1.group()
+        else:
+            return searchobj1.group()
+
+    # 提取xxx-av-11111
+    searchobj2 = re.search(r'XXX-AV-\d{4,}', filename.upper())
+    if searchobj2:
+        return searchobj2.group()
+    # 提取luxu
+    if 'luxu' in filename.lower():
+        searchobj3 = re.search(r'\d{0,3}luxu[-_]\d{4}', filename, re.I)
+        if searchobj3:
+            return searchobj3.group()
+    # 如果有fc2删除 ppv
+    if 'fc2' in filename.lower() and 'ppv' in filename.lower():
+        # 如果有短横线，则删除 ppv
+        if re.search(r'ppv\s*[-|_]\s*\d{6,}', filename, flags=re.I):
+            filename = re.sub(r'ppv', '', filename, flags=re.I)
+        # 如果没有，替换ppv为短横线
+        else:
+            filename = re.sub(r'\s{0,2}ppv\s{0,2}', '-', filename, flags=re.I)
+    # 如果符合fc111111的格式，则替换 fc 为 fc2
+    if re.search(r'fc[^2]\d{5,}', filename, re.I):
+        filename = filename.replace('fc', 'fc2-').replace('FC', 'FC2-')
+
+    def regular_id(st) -> str:
+        """
+        提取带 -或者_的
+        提取特定番号
+        这里采用严格字符数量的匹配方法，感觉很容易误触
+        """
+        search_regex = [
+            r'FC2[-_]\d{6,}',  # fc2-111111
+            r'[a-z]{2,5}[-_]\d{3}',  # bf-123 abp-454 mkbd-120  kmhrs-026
+            r'[a-z]{4}[-_][a-z]\d{3}',  # mkbd-s120
+            r'\d{6,}[-_][a-z]{4,}',  # 111111-MMMM
+            r'\d{6,}[-_]\d{3,}',  # 111111-111
+            r'n[-_]*[1|0]\d{3}'
+        ]
+        for regex in search_regex:
+            searchobj = re.search(regex, st, flags=re.I)
+            if searchobj:
+                return searchobj.group()
+            else:
+                continue
+
+    def no_line_id(st) -> str:
+        """
+        提取不带 -或者_的
+        应该只有集中不带横线，
+        """
+        search_regex = [
+            r'[a-z]{2,4}\d{3}',  # mkbd120 bf123
+            r'\d{6,}[a-z]{4,}',  # 111111MMMM
+            r'n[1|0]\d{3}'  # n1111
+        ]
+        for regex in search_regex:
+            searchobj = re.search(regex, st, flags=re.I)
+            if searchobj:
+                return searchobj.group()
+            else:
+                continue
+
+    # 最简单的还是通过 - _ 来分割判断
+    if '-' in filename or '_' in filename:
+        filename = regular_id(filename)
+        if filename:
+            return filename
+    else:
+        filename = no_line_id(filename)
+        if filename:
+            return filename
+        else:
+            # logger.warning(f'fail to match id: \n{file.name}\n try input manualy')
+            return input()
+
+
+class MyTestCase(unittest.TestCase):
+
+    def test_number_parser(self):
+        # AA-111
+        # AAAA-111
+        # 111111-111
+        # FC1111111 FC-1111111 FC.1111111
+        # AAA-111
+
+        file_list = {
+            'BF-622': 'xxx_原版首发_BF-622',
+            'SHKD-769': '[ThePorn][SHKD-769]高飛車女社長下克上輪姦希島あいり--更多视频访问[theporn.xyz]',
+            'DV-928': ' (アリス JAPAN) DV-928 麻美ゆまと 100 人のオナニスト',
+            'SPRD-839': '【SPRD-839】少妻的春光诱惑 - [上原亚衣]',
+            '100818_753': '[ThZu.Cc]100818_753-1pon-1080p',
+            'mast-003': 'mast-003-A',
+            'fc2-1154295': '2048 社区 - fun2048.com@fc1154295',
+            'MGT-081': 'MGT-081A~nyap2p.com',
+            'EYAN-052': '(E-BODY)(EYAN-052) ノーブラ Fcup 母乳妻の甘～い誘惑 小椋かをり',
+            'PPPD-365': 'PPPD-365.1080p',
+            '259luxu-1111': '259luxu-1111',
+            'FC2-1142063': '【FC2 PPV 1142063】カラオケで！見つからないかドキドキしながらもハメハメ !!!',
+            'n0890': 'tokyo_hot-n0890',
+            'n0891': 'Tokyo-Hot n0891 Shameless CA-Mary Jane Lee {18iso.com} [720p uncensored]',
+            'kmhrs-026': 'kmhrs-026-C'
+        }
+
+        for k, v in file_list.items():
+            self.assertEqual(k, number_parser(v))
+
+    def _test_single(self):
+        filename = '【FC2 PPV 1142063】カラオケで！見つからないかドキドキしながらもハメハメ !!!'
+        self.assertEqual('FC2-1142063', number_parser(filename))
+
+
+if __name__ == '__main__':
+    unittest.main()

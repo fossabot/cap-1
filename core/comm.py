@@ -27,25 +27,65 @@ logger = Logger()
 #         proxy.append(p.get('proxy'))
 #     cfg.proxy.freepool = proxy
 #     return cfg
+def mv(target, dest, flag: str = None):
+    """
+    move video file searching failed to failed folder
+    Args:
+        target: org file path
+        dest:
+        flag:
+    """
+    try:
+        shutil.move(target, dest)
+        logger.info(f'move {target.name} to {flag} folder')
+    except Exception as error_info:
+        logger.error(f'fail to move file: {str(error_info)}')
 
 
-def number_parser(file: Path):
+def mkdir(target):
+    try:
+        target.mkdir()
+        return target
+    except OSError as exc:
+        logger.error(f'fail to create folder: {str(exc)}')
+        sys.exit()
+
+
+def number_parser(filename):
+    """
+    提取番号
+    在 btsow 上随便找了几个有完整文件名的，试了一下
+    正则也不会，感觉这段写的好蠢，开销大不大的
+    Args:
+        filename:
+
+    Returns:
+
+    """
+
     def del_extra(st) -> str:
         """
-        删除汉字，cd1.. ，cC ,时间戳
+        删除cd1.. ，时间戳,
         """
         regex_list = [
-            r'[\u4e00-\u9fa5]',
-            r'cd\d+',
-            r'-\d{4}-\d{1,2}-\d{1,2}',
-            r'\d{4}-\d{1,2}-\d{1,2}-'
+            # r'[\u4e00-\u9fa5]+',
+            # r'[^A-Za-z0-9-_.()]',
+            r'cd\d$',  # 删除cd1
+            r'-\d{4}-\d{1,2}-\d{1,2}',  # 日期
+            r'\d{4}-\d{1,2}-\d{1,2}-',
+            r'1080p',
+            r'1pon',
+            r'.com',
+            r'nyap2p',
+            r'22-sht.me',
+            r'xxx'
         ]
         for regex in regex_list:
             st = re.sub(regex, '', st, flags=re.I)
-        st = st.strip('-cC ')
+        st = st.rstrip('-cC ')
         return st
 
-    filename: str = del_extra(file.stem)
+    filename = del_extra(filename.stem)
 
     # 提取欧美番号 sexart.11.11.11, 尽可能匹配人名
     searchobj1 = re.search(r'^\D+\d{2}\.\d{2}\.\d{2}', filename)
@@ -60,72 +100,110 @@ def number_parser(file: Path):
     searchobj2 = re.search(r'XXX-AV-\d{4,}', filename.upper())
     if searchobj2:
         return searchobj2.group()
+    # 提取luxu
+    if 'luxu' in filename.lower():
+        searchobj3 = re.search(r'\d{0,3}luxu[-_]\d{4}', filename, re.I)
+        if searchobj3:
+            return searchobj3.group()
+    # 如果有fc2删除 ppv
+    if 'fc2' in filename.lower() and 'ppv' in filename.lower():
+        # 如果有短横线，则删除 ppv
+        if re.search(r'ppv\s*[-|_]\s*\d{6,}', filename, flags=re.I):
+            filename = re.sub(r'ppv', '', filename, flags=re.I)
+        # 如果没有，替换ppv为短横线
+        else:
+            filename = re.sub(r'\s{0,2}ppv\s{0,2}', '-', filename, flags=re.I)
+    # 如果符合fc111111的格式，则替换 fc 为 fc2
+    if re.search(r'fc[^2]\d{5,}', filename, re.I):
+        filename = filename.replace('fc', 'fc2-').replace('FC', 'FC2-')
 
     def regular_id(st) -> str:
+        """
+        提取带 -或者_的
+        提取特定番号
+        这里采用严格字符数量的匹配方法，感觉很容易误触
+        """
         search_regex = [
-            'FC2-\d{5,}',  # 提取类似fc2-111111番号
-            '[a-zA-Z]+-\d+',  # 提取类似mkbd-120番号
-            '\d+[a-zA-Z]+-\d+',  # 提取类似259luxu-1111番号
-            '[a-zA-Z]+-[a-zA-Z]\d+',  # 提取类似mkbd-s120番号
-            '\d+-[a-zA-Z]+',  # 提取类似 111111-MMMM 番号
-            '\d+-\d+',  # 提取类似 111111-000 番号
-            '\d+_\d+'  # 提取类似 111111_000 番号
+            r'FC2[-_]\d{6,}',  # fc2-111111
+            r'[a-z]{2,5}[-_]\d{3}',  # bf-123 abp-454 mkbd-120  kmhrs-026
+            r'[a-z]{4}[-_][a-z]\d{3}',  # mkbd-s120
+            r'\d{6,}[-_][a-z]{4,}',  # 111111-MMMM
+            r'\d{6,}[-_]\d{3,}',  # 111111-111
+            r'n[-_]*[1|0]\d{3}'  # 有短横线，n1111 或者n-1111
         ]
         for regex in search_regex:
-            searchobj = re.search(regex, st)
+            searchobj = re.search(regex, st, flags=re.I)
             if searchobj:
-                return searchobj.group().replace('_', '-')
+                return searchobj.group()
             else:
                 continue
 
+    def no_line_id(st) -> str:
+        """
+        提取不带 -或者_的
+        应该只有集中不带横线，
+        """
+        search_regex = [
+            r'[a-z]{2,5}\d{3}',  # bf123 abp454 mkbd120  kmhrs026
+            r'\d{6,}[a-z]{4,}',  # 111111MMMM
+            r'n[1|0]\d{3}'  # n1111
+        ]
+        for regex in search_regex:
+            searchobj = re.search(regex, st, flags=re.I)
+            if searchobj:
+                return searchobj.group()
+            else:
+                continue
+
+    # 最简单的还是通过 - _ 来分割判断
     if '-' in filename or '_' in filename:
         filename = regular_id(filename)
         if filename:
             return filename
     else:
-        # filename = re.sub(u"\\(.*?\\)|{.*?}|\\[.*?]", "", filename)
-        # filename = filename.translate({ord(c): '' for c in set(string.punctuation)})
-        try:
-            find_num = re.findall(r'\d+', filename)[0]
-            find_char = re.findall(r'\D+', filename)[0]
-            return find_char + '-' + find_num
-        except re.error:
-            logger.warning(f'fail to match id: \n{file.name}\n try input manualy')
+        filename = no_line_id(filename)
+        if filename:
+            return filename
+        else:
+            logger.warning(f'fail to match id: \n{filename}\n try input manualy')
             return input()
 
 
-def create_failed_folder(search_path, needed_create):
+def create_folder(search_path, needed_create):
     """
     create failed folder
     Args:
         needed_create:
         search_path:
     """
-    faild_folder = Path(needed_create).resolve()
+    folder = Path(needed_create).resolve()
 
     # 如果配置文件中路径不是绝对路径
-    if not faild_folder.is_absolute():
+    if not folder.is_absolute():
         created = search_path.parents.joinpath(needed_create)
-        mkdir(created)
-        return created
+        return mkdir(created)
     else:
-        mkdir(faild_folder)
-        return faild_folder
+        return mkdir(folder)
 
 
-def get_video_path_list(path, cfg):
+def get_video_path_list(search_path, cfg):
     """
     search video according to path, exclude excluded folder
     Args:
-        path: 需要搜寻的文件夹
+        search_path: 需要搜寻的文件夹
         cfg: config
 
-    Returns:
+    Returns: 文件地址你表
 
     """
     file_type = cfg.common.file_type
-    excluded = [path.joinpath(e) for e in cfg.exclude.folder]
-    return [f for f in path.rglob('*') if f.suffix in file_type and not [a for a in excluded if a in f.parents]]
+    # 完整排除文件夹的路径
+    excluded = [search_path.joinpath(e) for e in cfg.exclude.folders]
+    # suffix 获取后缀
+    # parents 获取所有父级文件夹
+    # 如果在需要搜索的文件中，文件符合格式后缀，且该文件的所有父级文件夹不在排除文件夹中，则为需要的文件
+    # （感觉这个写法开销是很大的，需要改进，且有滥用列表生成式的问题）
+    return [f for f in search_path.rglob('*') if f.suffix in file_type and not [n for n in excluded if n in f.parents]]
 
 
 def check_data_state(data) -> object:
@@ -134,7 +212,7 @@ def check_data_state(data) -> object:
     """
     if not data.title or data.title == "null":
         return False
-    if not data.number or data.number == "null":
+    if not data.id or data.id == "null":
         return False
     else:
         return True
@@ -146,11 +224,12 @@ def replace_date(data, location_rule: str) -> str:
     Returns:
         str:
     """
+    # 需要替换的数据名称列表
     replace_data_list = [i for i in data.keys() if i in location_rule]
     for s in replace_data_list:
         location_rule = location_rule.replace(s, data[s])
     # # Remove illegal characters
-    res = '[\/\\\:\*\?\"\<\>\|]'
+    res = r'[\/\\\:\*\?\"\<\>\|]'
     return re.sub(res, "_", location_rule)
 
 
@@ -179,27 +258,36 @@ def check_name_length(name, max_title_len) -> str:
         return name
 
 
-def mv(target, dest, flag: str = None):
+def create_folder_move_file(old_file_path, search_path, data, cfg):
     """
-    move video file searching failed to failed folder
+    use metadate replace location_rule, create folder
+    使用爬取的元数据替换路径规则，再创建文件。
+    根据 / 划分层级，检查每层文件夹的名称长度
     Args:
-        target: org file path
-        dest:
-        flag:
+        old_file_path:
+        cfg:
+        search_path:
+        data: metadata
     """
-    try:
-        shutil.move(target, dest)
-        logger.info(fr'move {target.name} to {flag} folder')
-    except Exception as error_info:
-        logger.error("fail to move file" + str(error_info))
+    # If the number of actors is more than 5, take the first two
+    # 如果演员数量大于5 ，则取前两个
 
-
-def mkdir(target):
-    try:
-        target.mkdir()
-    except OSError as exc:
-        logger.error("fail to create folder: {}".format(str(exc)))
-        sys.exit()
+    if len(data.actor.split(',')) >= 5:
+        data.actor = ','.join(data.actor.split(',')[:2]) + 'etc.'
+    location_rule = replace_date(data, cfg.name_rule.location_rule)
+    # mkdir folder by level
+    new_folder = None
+    for name in location_rule.split('/'):
+        name = check_name_length(name, cfg.name_rule.max_title_len)
+        output_folder = create_folder(search_path, cfg.name_rule.success_output_folder)
+        new_folder = mkdir(output_folder.joinpath(name))
+    assert new_folder is not None
+    # 替换数据，检查长度，移动和重命名文件，
+    # check length of name
+    naming_rule = check_name_length(cfg.name_rule.naming_rule, cfg.name_rule.max_title_len)
+    new_file_name = replace_date(data, naming_rule)
+    mv(old_file_path, new_folder.joinpath(new_file_name))
+    return new_file_name
 
 
 def write_nfo(file_path, data, cfg):

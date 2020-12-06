@@ -9,10 +9,12 @@ common:
 proxy:
   enable: False
   type: socks5
-  host: 
+  host:
+priority:
+  website: [ "javbus", "javdb" ]
 name_rule:
   location_rule: actor/number
   naming_rule: number-title
   max_title_len: 50
 exclude:
-  folders: [failed,output,escape]
+  folders: [ failed,output,escape ]

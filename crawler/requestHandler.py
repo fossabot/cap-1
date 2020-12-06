@@ -1,6 +1,5 @@
 # https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
 
-
 from urllib.request import getproxies
 
 import requests
@@ -32,7 +31,6 @@ class RequestHandler(object):
 
         self._user_agent = Factory.create()
         self.cfg = cfg
-        # self.proxies = self.proxy_strategy()
 
     @property
     def proxy_strategy(self):
@@ -47,7 +45,7 @@ class RequestHandler(object):
                 return getproxies()
         # system's proxy
         else:
-            logger.info('using system proxy')
+            # logger.info('using system proxy')
             return getproxies()
 
     @property

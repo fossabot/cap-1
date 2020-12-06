@@ -22,6 +22,8 @@ class Javbus(CrawlerCommon):
         super().__init__(cfg)
         for url in self._url:
             try:
+                logger.info(f'\nusing javbus searching: {number}, using ling {url}')
+
                 self.response = self.response(urljoin(url, number)).text
                 break
             except HTTPError:
@@ -54,7 +56,7 @@ class Javbus(CrawlerCommon):
         info = self.html.xpath('//div[@class="col-md-3 info"]')
         for i in info:
             # number
-            self.data.number = str(i.xpath('//p[1]/span[2]/text()')).strip(" ['']")
+            self.data.id = str(i.xpath('//p[1]/span[2]/text()')).strip(" ['']")
             runtime = i.xpath('//p[position()>1 and position()<4]/text()')
             # release
             self.data.release = runtime[0]
@@ -63,10 +65,8 @@ class Javbus(CrawlerCommon):
             ret4 = i.xpath('ul/div/li//div[@class="star-name"]/a/text()')
             # print(ret4)
             # actor
-            if ret4:
-                self.data.actor = ret4
-            else:
-                self.data.actor = ""
+            self.data.actor = ret4 if ret4 else ''
+
             ret3 = i.xpath('p/a/text()')
             ret5 = i.xpath('p/span/text()')
             if '導演:' in ret5:
@@ -79,7 +79,7 @@ class Javbus(CrawlerCommon):
             else:
                 self.data.director = ""
                 self.data.studio = str(ret3[0]).strip(" ['']")
-                self.data.label = str(ret3[1]).strip(" ['']")
+                # self.data.label = str(ret3[1]).strip(" ['']")
             if '系列:' in ret5:
                 # serise
                 self.data.serise = str(ret3[-1]).strip(" ['']")

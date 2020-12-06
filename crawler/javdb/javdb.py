@@ -1,6 +1,7 @@
 from urllib.parse import urljoin
 
 from lxml import etree
+from urllib3.exceptions import HTTPError
 
 from crawler.crawlerCommon import (
     CrawlerCommon,
@@ -20,12 +21,13 @@ class Javdb(CrawlerCommon):
         super().__init__(cfg)
         # self.number = number
         for url in self._url:
+            logger.info(f'\nusing javbus searching: {number}, using ling {url}')
             # url = urljoin(url, 'search?q=', number, '&f=all')
             url = url + 'search?q=' + number + '&f=all'
             try:
-                self.query = self.response(url).content
+                self.query = self.response(url).text
                 break
-            finally:
+            except HTTPError:
                 continue
             # except:
             #     continue
@@ -48,7 +50,7 @@ class Javdb(CrawlerCommon):
         """
         title
         """
-        self.data.title = str(self.html.xpath('//h2/strong/text()')[0]).strip(" ['']")
+        self.data.title = str(self.html.xpath('//h2[@class="title is-4"]/strong/text()')).strip(" ['']")
 
     def smallcover(self):
         pass
@@ -71,10 +73,10 @@ class Javdb(CrawlerCommon):
 
         for ret in parents:
             ret1 = ret.xpath('strong/text()')
-            ret2 = ret.xpath('a/@data-clipboard-text')
+            ret2 = ret.xpath('span//text()')
             # print(ret1)
             if "番號" in str(ret1):
-                self.data.ID = ret.xpath('a/@data-clipboard-text')[0]
+                self.data.id = ret.xpath('a/@data-clipboard-text')[0]
             elif "日期" in str(ret1):
                 self.data.release = ret2[0]
             elif "時長" in str(ret1):
@@ -104,7 +106,10 @@ class JavdbBuilder:
 
 
 if __name__ == "__main__":
-    # jav = Javdb("")
-    # data = jav.get_data()
-    # print(data.released)
+    from core.cli import get_cfg_defaults
+
+    cfgs = get_cfg_defaults()
+    jav = Javdb("FC2-1591505", cfgs)
+    data = jav.get_data()
+    print(data.released)
     pass
