@@ -93,8 +93,7 @@ def number_parser(filename):
         r_searchobj1 = re.search(r'^\D+\d{2}\.\d{2}\.\d{2}\.\D+', filename)
         if r_searchobj1:
             return r_searchobj1.group()
-        else:
-            return searchobj1.group()
+        return searchobj1.group()
 
     # 提取xxx-av-11111
     searchobj2 = re.search(r'XXX-AV-\d{4,}', filename.upper())
@@ -111,8 +110,7 @@ def number_parser(filename):
         if re.search(r'ppv\s*[-|_]\s*\d{6,}', filename, flags=re.I):
             filename = re.sub(r'ppv', '', filename, flags=re.I)
         # 如果没有，替换ppv为短横线
-        else:
-            filename = re.sub(r'\s{0,2}ppv\s{0,2}', '-', filename, flags=re.I)
+        filename = re.sub(r'\s{0,2}ppv\s{0,2}', '-', filename, flags=re.I)
     # 如果符合fc111111的格式，则替换 fc 为 fc2
     if re.search(r'fc[^2]\d{5,}', filename, re.I):
         filename = filename.replace('fc', 'fc2-').replace('FC', 'FC2-')
@@ -135,8 +133,7 @@ def number_parser(filename):
             searchobj = re.search(regex, st, flags=re.I)
             if searchobj:
                 return searchobj.group()
-            else:
-                continue
+            continue
 
     def no_line_id(st) -> str:
         """
@@ -155,28 +152,24 @@ def number_parser(filename):
                 char = re.findall(r'[a-z]+', searchobj5.group(), flags=re.I)[0]
                 if num:
                     return num.group() + '-' + char
-                else:
-                    return char + '-' + re.search(r'\d+', searchobj5.group()).group()
-            else:
-                continue
+                return char + '-' + re.search(r'\d+', searchobj5.group()).group()
+            continue
 
     # 最简单的还是通过 - _ 来分割判断
     if '-' in filename or '_' in filename:
         filename = regular_id(filename)
         if filename:
             return filename
-    else:
-        # n1111
-        searchobj4 = re.search(r'n[1|0]\d{3}', filename, flags=re.I)
-        if searchobj4:
-            return searchobj4.group()
+    # n1111
+    searchobj4 = re.search(r'n[1|0]\d{3}', filename, flags=re.I)
+    if searchobj4:
+        return searchobj4.group()
 
-        filename = no_line_id(filename)
-        if filename:
-            return filename
-        else:
-            logger.warning(f'fail to match id: \n{filename}\n try input manualy')
-            return input()
+    filename = no_line_id(filename)
+    if filename:
+        return filename
+    logger.warning(f'fail to match id: \n{filename}\n try input manualy')
+    return input()
 
 
 def create_folder(search_path, needed_create):
@@ -192,8 +185,7 @@ def create_folder(search_path, needed_create):
     if not folder.is_absolute():
         created = search_path.parents.joinpath(needed_create)
         return mkdir(created)
-    else:
-        return mkdir(folder)
+    return mkdir(folder)
 
 
 def get_video_path_list(search_path, cfg):
@@ -224,8 +216,7 @@ def check_data_state(data) -> object:
         return False
     if not data.id or data.id == "null":
         return False
-    else:
-        return True
+    return True
 
 
 def replace_date(data, location_rule: str) -> str:
@@ -262,10 +253,8 @@ def check_name_length(name, max_title_len) -> str:
         choice = input("automatic clip name(y), or try manual entry: \n")
         if choice.lower() == "y":
             return name[:max_title_len]
-        else:
-            check_name_length(choice, max_title_len)
-    else:
-        return name
+        check_name_length(choice, max_title_len)
+    return name
 
 
 def create_folder_move_file(old_file_path, search_path, data, cfg):

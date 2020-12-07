@@ -82,8 +82,7 @@ def check_input(cfg):
         if file.is_file():
             logger.info(f'The following video: {_file} -> {_id}will be searched soon')
             return [file, _id]
-        else:
-            logger.info(f'file path error: {_file}')
+        logger.info(f'file path error: {_file}')
     except ValueError:
         path = Path(parser.p).resolve()
         if path.is_dir():
@@ -92,8 +91,7 @@ def check_input(cfg):
                 logger.debug(f'the videos in folder: {str(path)} will be searched soon：', extra={'list': files})
             folder_files[str(path)] = files
             return folder_files
-        else:
-            logger.info(f'folder path error: {str(path)}')
+        logger.info(f'folder path error: {str(path)}')
 
 
 if __name__ == "__main__":

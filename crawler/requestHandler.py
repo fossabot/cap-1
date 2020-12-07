@@ -14,7 +14,7 @@ from utils.logger import Logger
 logger = Logger()
 
 
-class RequestHandler(object):
+class RequestHandler:
     """
     RequestHandler
     """
@@ -40,13 +40,11 @@ class RequestHandler(object):
                 proxy = "{}://{}".format(self.cfg.proxy.type, self.cfg.proxy.host)
                 proxies = {"http": proxy, "https": proxy}
                 return proxies
-            else:
-                logger.warning('using system proxy')
-                return getproxies()
-        # system's proxy
-        else:
-            # logger.info('using system proxy')
+            logger.warning('using system proxy')
             return getproxies()
+        # system's proxy
+        # logger.info('using system proxy')
+        return getproxies()
 
     @property
     def retry_strategy(self) -> Retry:

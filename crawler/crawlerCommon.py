@@ -58,8 +58,7 @@ class CrawlerCommon(RequestHandler):
             with open(file_name, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
             logger.info(f'sucessfully download: {file_name}')
-        else:
-            logger.warning(f'fail download: {file_name}')
+        logger.warning(f'fail download: {file_name}')
 
 
 class PriorityQueue:

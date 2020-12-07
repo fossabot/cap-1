@@ -60,8 +60,7 @@ class CapBase:
                 self.data = services.get(priority.pop(), self.number, self.cfg)
                 if check_data_state(self.data):
                     break
-                else:
-                    continue
+                continue
             # 这里太宽泛了，很容易跳到这里，添加 finally 来移动文件夹。
             except Exception as exc:
                 logger.error(f'No data obtained: {exc}')
@@ -69,8 +68,6 @@ class CapBase:
             finally:
                 if not self.data:
                     mv(self.file, self.failed_folder, flag='fail')
-                else:
-                    pass
 
     def folder_file_utils(self) -> Path:
         """
@@ -129,8 +126,7 @@ class Cap:
         if not self.cfg.common.debug:
             if hasattr(self, 'folder'):
                 return create_folder(self.folder, self.cfg)
-            else:
-                return create_folder(self.file, self.cfg)
+            return create_folder(self.file, self.cfg)
 
     def check_number_parser(self, target):
         logger.info('file pointing number', extra={'dict': target})
@@ -142,8 +138,7 @@ class Cap:
                 self.check_number_parser(target)
             except KeyError:
                 raise
-        else:
-            return target
+        return target
 
     def mutil_process(self, target):
         futures = []
@@ -164,8 +159,7 @@ class Cap:
                           failed_folder_path=self.failed,
                           cfg=self.cfg)
             return cap()
-        else:
-            target = dict(zip(self.files, self.ids))
-            if self.cfg.debug.check_number_parser:
-                target = self.check_number_parser(target)
-                self.mutil_process(target)
+        target = dict(zip(self.files, self.ids))
+        if self.cfg.debug.check_number_parser:
+            target = self.check_number_parser(target)
+            self.mutil_process(target)
