@@ -28,15 +28,19 @@ class CapBase:
     获取元数据 -> 创建文件夹 -> 重命名和移动文件 -> 下载和处理图片 -> 创建 nfo
     """
 
-    def __init__(self, file_path, number, search_path, failed_folder_path, cfg):
+    def __init__(self,
+                 file_path: Path,
+                 number: str,
+                 search_path: Path,
+                 failed_folder_path: Path,
+                 cfg):
         self.file = file_path
-        self.number: str = number
+        self.number = number
         self.search_path = search_path
         self.failed_folder = failed_folder_path
         self.data = None
         self.cfg = cfg
 
-    @property
     def get_metadata(self):
         """
         get metadata from website according to number
@@ -47,6 +51,7 @@ class CapBase:
         """
         # priority init， get sorted website
         priority = WebsitePriority(self.cfg.priority.website)
+        priority.sort_website(self.number)
         # 自动注册 crawler 文件夹中的爬虫类
         services = auto_register_service()
         while not priority.empty():
@@ -54,7 +59,7 @@ class CapBase:
             try:
                 self.data = services.get(priority.pop(), self.number, self.cfg)
                 if check_data_state(self.data):
-                    return self.data
+                    break
                 else:
                     continue
             # 这里太宽泛了，很容易跳到这里，添加 finally 来移动文件夹。
@@ -67,7 +72,7 @@ class CapBase:
                 else:
                     pass
 
-    def folder_file_utils(self):
+    def folder_file_utils(self) -> Path:
         """
         use metadate replace location_rule, create folder
         使用爬取的元数据替换路径规则，再创建文件。
@@ -75,38 +80,36 @@ class CapBase:
         """
         return create_folder_move_file(self.file, self.search_path, self.data, self.cfg)
 
-    def img_utils(self, created_folder: Path, metadata):
+    def img_utils(self, created_folder: Path):
         """
         download and process pic
         处理和下载图片
         Args:
             created_folder:
-            metadata:
         """
-        # //TODO 图片下载
         request = CrawlerCommon(self.cfg)
-        request.download(metadata.poster, Path(created_folder).joinpath('poster.name'))
+        img_url = {'poster': self.data.poster, 'thumb': self.data.thumb, 'fanart': self.data.fanart}
+        for name, url in img_url.items():
+            request.download(url, created_folder.joinpath(name + 'jpg'))
 
-    def create_nfo(self, new_file_name: Path, metadata):
+    def create_nfo(self, new_file_path: Path):
         """
         创建 nfo 文件
         Returns:
             object:
         """
-        return write_nfo(new_file_name, metadata, self.cfg)
+
+        return write_nfo(new_file_path, self.data, self.cfg)
 
     def __call__(self):
-        # metadata = self.get_metadata
-        # if not self.cfg.common.debug:
-        #     created_folder = self.create_folder(metadata)
-        #     new_file_name = self.move_rename_video(created_folder, metadata)
-        #     self.img_utils(created_folder, metadata)
-        #     self.create_nfo(new_file_name, metadata)
-        data = self.get_metadata
-        if data:
-            print(f'test only title: {data.title}')
-        else:
-            pass
+        self.get_metadata()
+        # if data:
+        #     print(f'test only title: {data.title}')
+        # else:
+        #     pass
+        new_file_path: Path = self.folder_file_utils
+        self.img_utils(new_file_path.parents)
+        self.create_nfo(new_file_path)
 
 
 class Cap:

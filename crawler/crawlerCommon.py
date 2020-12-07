@@ -68,23 +68,34 @@ class PriorityQueue:
         self._queue = []
         self._index = 0
 
-    def push(self, item, _priority):
-        heapq.heappush(self._queue, (-_priority, self._index, item))
+    def push(self, item, priority):
+        # 队列由 (priority, index, item)形式的元祖构成
+        heapq.heappush(self._queue, (-priority, self._index, item))
         self._index += 1
 
     def pop(self):
         return heapq.heappop(self._queue)[-1]
 
-    def qsize(self):
-        return len(self._queue)
-
     def empty(self):
         return True if not self._queue else False
+
+    def arrange(self, item, priority):
+        # 用了个蠢办法实现，手动升级优先级的方法，
+        # 因为要实现后进后出，用了index， 但是删除时也不知道index，又是一大开销啊
+        for i in self._queue:
+            if i[2] == item:
+                _index = i[1]
+                _priority = i[0]
+                self._queue.remove((_priority, _index, item))
+        heapq.heapify(self._queue)
+        heapq.heappush(self._queue, (-priority, self._index, item))
+        self._index += 1
 
 
 class WebsitePriority(PriorityQueue):
     def __init__(self, sources):
         super().__init__()
+        # 初始化优先级队列，按照列表中的先后顺序排列
         _gen = (d for d in sources)
         while True:
             try:
@@ -93,11 +104,15 @@ class WebsitePriority(PriorityQueue):
                 break
 
     def sort_website(self, number):
-        if re.match(r"^\d{5,}", number) or "heyzo" in number.lower():
-            self.push("avsox", 1)
-        if re.match(r"\d+\D+", number) or "siro" in number.lower():
-            self.push("mgstage", 1)
-        if "fc2" in number.lower():
-            self.push("fc2", 1)
-        if "rj" in number.lower():
-            self.push("dlsite", 1)
+        if re.match(r'^\d{5,}', number) or "heyzo" in number.lower():
+            self.arrange("avsox", 1)
+        elif re.match(r'\d+[a-zA-Z]+-\d+', number) or "siro" in number.lower():
+            self.arrange("mgstage", 1)
+        elif re.match('\D{2,}00\d{3,}', number) and '-' not in number and '_' not in number:
+            self.arrange('dmm', 1)
+        elif re.search('\D+\.\d{2}\.\d{2}\.\d{2}', number):
+            self.arrange('javdb', 1)
+        elif "fc2" in number.lower():
+            self.arrange("fc2", 1)
+        elif "rj" in number.lower():
+            self.arrange("dlsite", 1)

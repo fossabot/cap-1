@@ -54,7 +54,7 @@ def mkdir(target):
 def number_parser(filename):
     """
     提取番号
-    在 btsow 上随便找了几个有完整文件名的，试了一下
+    又在 btsow 上抓了一些 Hot Tags 页面的番号，测试一下
     正则也不会，感觉这段写的好蠢，开销大不大的
     Args:
         filename:
@@ -141,17 +141,22 @@ def number_parser(filename):
     def no_line_id(st) -> str:
         """
         提取不带 -或者_的
-        应该只有集中不带横线，
+        应该只有几种不带横线，
         """
         search_regex = [
             r'[a-z]{2,5}\d{3}',  # bf123 abp454 mkbd120  kmhrs026
             r'\d{6,}[a-z]{4,}',  # 111111MMMM
-            r'n[1|0]\d{3}'  # n1111
         ]
         for regex in search_regex:
-            searchobj = re.search(regex, st, flags=re.I)
-            if searchobj:
-                return searchobj.group()
+            searchobj5 = re.search(regex, st, flags=re.I)
+            if searchobj5:
+                # 进一步判断数字在前还是字母在前
+                num = re.search(r'^\d{3,}', searchobj5.group())
+                char = re.findall(r'[a-z]+', searchobj5.group(), flags=re.I)[0]
+                if num:
+                    return num.group() + '-' + char
+                else:
+                    return char + '-' + re.search(r'\d+', searchobj5.group()).group()
             else:
                 continue
 
@@ -161,6 +166,11 @@ def number_parser(filename):
         if filename:
             return filename
     else:
+        # n1111
+        searchobj4 = re.search(r'n[1|0]\d{3}', filename, flags=re.I)
+        if searchobj4:
+            return searchobj4.group()
+
         filename = no_line_id(filename)
         if filename:
             return filename
@@ -286,8 +296,19 @@ def create_folder_move_file(old_file_path, search_path, data, cfg):
     # check length of name
     naming_rule = check_name_length(cfg.name_rule.naming_rule, cfg.name_rule.max_title_len)
     new_file_name = replace_date(data, naming_rule)
-    mv(old_file_path, new_folder.joinpath(new_file_name))
-    return new_file_name
+    new_file_path = new_folder.joinpath(new_file_name)
+    mv(old_file_path, new_file_path)
+    return new_file_path
+
+
+def extra_tag(file_path: Path):
+    file_name = file_path.name
+    if '-cd' in file_name.lower():
+        pass
+    if '-c.' in file_name.lower() or '中文' in file_name or '字幕' in file_name:
+        pass
+    if '流出' in file_name:
+        pass
 
 
 def write_nfo(file_path, data, cfg):

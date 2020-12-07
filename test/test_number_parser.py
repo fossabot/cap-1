@@ -84,14 +84,18 @@ def number_parser(filename):
         应该只有集中不带横线，
         """
         search_regex = [
-            r'[a-z]{2,4}\d{3}',  # mkbd120 bf123
+            r'[a-z]{2,5}\d{3}',  # mkbd120 bf123
             r'\d{6,}[a-z]{4,}',  # 111111MMMM
-            r'n[1|0]\d{3}'  # n1111
         ]
         for regex in search_regex:
-            searchobj = re.search(regex, st, flags=re.I)
-            if searchobj:
-                return searchobj.group()
+            searchobj5 = re.search(regex, st, flags=re.I)
+            if searchobj5:
+                num = re.search(r'^\d{3,}', searchobj5.group())
+                char = re.findall(r'[a-z]+', searchobj5.group(), flags=re.I)[0]
+                if num:
+                    return num.group() + '-' + char
+                else:
+                    return char + '-' + re.search(r'\d+', searchobj5.group()).group()
             else:
                 continue
 
@@ -101,6 +105,11 @@ def number_parser(filename):
         if filename:
             return filename
     else:
+        # n1111
+        searchobj4 = re.search(r'n[1|0]\d{3}', filename, flags=re.I)
+        if searchobj4:
+            return searchobj4.group()
+
         filename = no_line_id(filename)
         if filename:
             return filename
@@ -133,7 +142,30 @@ class MyTestCase(unittest.TestCase):
             'FC2-1142063': '【FC2 PPV 1142063】カラオケで！見つからないかドキドキしながらもハメハメ !!!',
             'n0890': 'tokyo_hot-n0890',
             'n0891': 'Tokyo-Hot n0891 Shameless CA-Mary Jane Lee {18iso.com} [720p uncensored]',
-            'kmhrs-026': 'kmhrs-026-C'
+            'kmhrs-026': 'kmhrs-026-C',
+            'STARS-272': 'STARS272AC',
+            'ipx-568': 'ipx-568-C',
+            'STARS-267': 'STARS267',
+            'GVG-509': 'GVG-509',
+            'MIDE-856': 'MIDE-856.1080p',
+            'STARS-250': 'STARS250',
+            'SDMF-013': 'SDMF-013_CH_SD',
+            'STARS-126': 'STARS-126_HD_CH',
+            'JFB-164': '[44x.me]JFB-164-2',
+            'ipz-844': '[Thz.la]ipz-844',
+            'GOJU-158': 'GOJU-158_CH_SD',
+            'bab-013': 'HD_bab-013',
+            'gvg-904': 'HD-gvg-904',
+            'SSNI-745': 'ซับฝัง/SSNI-745',
+            'EMAZ-209': '[鱼香肉丝]EMAZ-209',
+            'PRED-276': 'big2048.com@PRED-276',
+            'ipz-947': 'ipz-947-C',
+            'STARS-058': 'STARS-058_CH_SD',
+            'SSNI-780': 'SSNI-780@AD',
+            'katu-059': 'katu-059.1080p',
+            'OFJE-267': '[69av][OFJE-267]圧倒的美少女が故に標的にされた橋本ありな快楽に堕ちるレ○プベスト8時間--更多视频访问[69av.one',
+            'CJOD-269': '@蜂鳥@FENGNIAO131.VIP-CJOD-269_2K',
+            'BANK-021': 'HD_BANK-021',
         }
 
         for k, v in file_list.items():
