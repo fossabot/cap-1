@@ -1,6 +1,6 @@
 from urllib.parse import urljoin
 
-from lxml import etree
+from defusedxml import etree
 from requests import RequestException
 
 from crawler.crawlerCommon import CrawlerCommon
@@ -39,7 +39,7 @@ class Javdb(CrawlerCommon):
         """
         title
         """
-        self.data.title = str(self.html.xpath('//h2[@class="title is-4"]/strong/text()')).strip(" ['']")
+        self.data.title = str(self.html.xpath('//h2[@class="title is-4"]/strong/text()'))
 
     def smallcover(self):
         pass

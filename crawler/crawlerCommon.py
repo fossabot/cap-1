@@ -95,7 +95,7 @@ class PriorityQueue:
         return heapq.heappop(self._queue)[-1]
 
     def empty(self):
-        return True if not self._queue else False
+        return bool(self._queue)
 
     def arrange(self, item, priority):
         # 用了个蠢办法实现，手动升级优先级的方法，
@@ -131,9 +131,9 @@ class WebsitePriority(PriorityQueue):
             self.arrange("avsox", 1)
         elif re.match(r'\d+[a-zA-Z]+-\d+', number) or "siro" in number.lower():
             self.arrange("mgstage", 1)
-        elif re.match('\D{2,}00\d{3,}', number) and '-' not in number and '_' not in number:
+        elif re.match(r'\D{2,}00\d{3,}', number) and '-' not in number and '_' not in number:
             self.arrange('dmm', 1)
-        elif re.search('\D+\.\d{2}\.\d{2}\.\d{2}', number):
+        elif re.search(r'\D+\.\d{2}\.\d{2}\.\d{2}', number):
             self.arrange('javdb', 1)
         elif "fc2" in number.lower():
             self.arrange("fc2", 1)

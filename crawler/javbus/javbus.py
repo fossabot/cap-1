@@ -1,7 +1,7 @@
 import re
 from urllib.parse import urljoin
 
-from lxml import etree
+from defusedxml import etree
 from requests import RequestException
 
 from crawler.crawlerCommon import CrawlerCommon
@@ -36,7 +36,7 @@ class Javbus(CrawlerCommon):
         """
         title = str(self.html.xpath('//div[@class="container"]/div/div[1]/a/img/@title'))
         try:
-            self.data.title = re.sub('n\d+-', '', title)
+            self.data.title = re.sub(r'n\d+-', '', title)
         except AttributeError:
             self.data.title = title
 

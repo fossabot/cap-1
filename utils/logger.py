@@ -58,7 +58,7 @@ class ListFilter(logging.Filter):
         return super(ListFilter, self).filter(record)
 
 
-class Logger(object):
+class Logger:
     def __init__(self):
         """
         指定保存日志的文件路径，日志级别，以及调用文件

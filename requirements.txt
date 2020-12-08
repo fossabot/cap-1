@@ -1,8 +1,8 @@
 pathlib~=1.0.1
 requests~=2.25.0
-lxml~=4.6.2
 colorama~=0.4.4
 yacs~=0.1.8
 urllib3~=1.26.2
 faker~=4.17.1
 importlib~=1.0.4
+defusedxml~=0.6.0

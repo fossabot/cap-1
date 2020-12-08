@@ -3,10 +3,10 @@ import shutil
 import sys
 from pathlib import Path
 
-# import requests
-from lxml.etree import Element, SubElement, ElementTree
-
 from utils.logger import Logger
+
+# import requests
+# from defusedxml import ElementTree
 
 logger = Logger()
 
@@ -281,7 +281,7 @@ def check_name_length(name, max_title_len) -> str:
     # Remove the space on the right side of folder name or file name
     name = name.rstrip()
     if len(name) > max_title_len:
-        logger.info("folder name is too long:%s\ntry manual entry：\n".format(name))
+        logger.info(f"folder name is too long: {name}\ntry manual entry：\n")
         choice = input("automatic clip name(y), or try manual entry: \n")
         if choice.lower() == "y":
             return name[:max_title_len]
@@ -320,7 +320,7 @@ def move_file(old_file_path, new_folder_path, data, cfg):
     naming_rule = check_name_length(cfg.name_rule.naming_rule, cfg.name_rule.max_title_len)
     file_name = replace_date(data, naming_rule)
 
-    for key, mark in data.extra.items():
+    for mark in data.extra.values():
         file_name += '-' + mark
 
     file_name += old_file_path.suffix
@@ -337,25 +337,26 @@ def write_nfo(file_path, data, cfg):
         file_path:
         data:
     """
-    nfo_root = Element("movie")
-    folder = Path(file_path).parent
-    filename = folder.joinpath(Path(file_path).with_suffix('.nfo'))
-    nfo_fields = dict
-    if cfg.common.mode == "":
-        nfo_fields = {
-            'title': data.title,
-            'studio': data.studio,
-            'year': data.year,
-            'tag': data.tag,
-        }
-    for field_name, values in nfo_fields.items():
-        if not values:
-            continue
-        if not isinstance(values, list):
-            values = [values]
-        for value in values:
-            SubElement(nfo_root, field_name).text = f"{value}"
-
-    ElementTree(nfo_root).write(
-        filename, encoding="utf-8", xml_declaration=True, pretty_print=True
-    )
+    pass
+    # nfo_root = Element("movie")
+    # folder = Path(file_path).parent
+    # filename = folder.joinpath(Path(file_path).with_suffix('.nfo'))
+    # nfo_fields = dict
+    # if cfg.common.mode == "":
+    #     nfo_fields = {
+    #         'title': data.title,
+    #         'studio': data.studio,
+    #         'year': data.year,
+    #         'tag': data.tag,
+    #     }
+    # for field_name, values in nfo_fields.items():
+    #     if not values:
+    #         continue
+    #     if not isinstance(values, list):
+    #         values = [values]
+    #     for value in values:
+    #         SubElement(nfo_root, field_name).text = f"{value}"
+    #
+    # ElementTree(nfo_root).write(
+    #     filename, encoding="utf-8", xml_declaration=True, pretty_print=True
+    # )
