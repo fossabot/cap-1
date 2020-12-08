@@ -1,5 +1,4 @@
 # https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
-
 from urllib.request import getproxies
 
 import requests
@@ -41,8 +40,6 @@ class RequestHandler:
                 proxies = {"http": proxy, "https": proxy}
                 return proxies
             logger.warning('using system proxy')
-            return getproxies()
-        # system's proxy
         # logger.info('using system proxy')
         return getproxies()
 
@@ -67,27 +64,28 @@ class RequestHandler:
         adapter = HTTPAdapter(max_retries=self.retry_strategy)
         session.mount("https://", adapter)
         session.mount("http://", adapter)
-        """
-        Often when using a third party API you want to verify that the returned response is indeed valid. 
-        Requests offers the shorthand helper raise_for_status() 
-        which asserts that the response HTTP status code is not a 4xx or a 5xx, 
-        """
+        # Often when using a third party API you want to verify that the returned response is indeed valid.
+        # Requests offers the shorthand helper raise_for_status()
+        # which asserts that the response HTTP status code is not a 4xx or a 5xx,
         assert_status_hook = lambda response, *args, **kwargs: response.raise_for_status()
-        """
-        the requests library offers a 'hooks' interface 
-        where you can attach callbacks on certain parts of the request process.
-        """
+        # the requests library offers a 'hooks' interface
+        # where you can attach callbacks on certain parts of the request process.
         session.hooks['response'] = [assert_status_hook]
         # use faker generate fake user-agent
         session.headers.update({
             "User-Agent": self._user_agent.user_agent()
         })
+        session.proxies.update(self.proxy_strategy)
         return session
 
     def get(self, url: str, params: dict = None, **kwargs) -> Response:
         """
         Returns the GET request encoded in `utf-8`.
         """
-        response = self.session.get(url, timeout=self.timeout, params=params, proxies=self.proxy_strategy, **kwargs)
+        response = self.session.get(url, timeout=self.timeout, params=params, **kwargs)
         response.encoding = 'utf-8'
+        return response
+
+    def post(self, url: str, data, headers, **kwargs):
+        response = self.session.post(url, data, timeout=self.timeout, headers=headers, **kwargs)
         return response

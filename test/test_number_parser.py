@@ -18,7 +18,8 @@ def number_parser(filename):
             r'.com',
             r'nyap2p',
             r'22-sht.me',
-            r'xxx'
+            r'xxx',
+            r'carib '
         ]
         for regex in regex_list:
             st = re.sub(regex, '', st, flags=re.I)
@@ -63,7 +64,7 @@ def number_parser(filename):
         """
         search_regex = [
             r'FC2[-_]\d{6,}',  # fc2-111111
-            r'[a-z]{2,5}[-_]\d{3}',  # bf-123 abp-454 mkbd-120  kmhrs-026
+            r'[a-z]{2,5}[-_]\d{2,3}',  # bf-123 abp-454 mkbd-120  kmhrs-026
             r'[a-z]{4}[-_][a-z]\d{3}',  # mkbd-s120
             r'\d{6,}[-_][a-z]{4,}',  # 111111-MMMM
             r'\d{6,}[-_]\d{3,}',  # 111111-111
@@ -81,7 +82,7 @@ def number_parser(filename):
         应该只有集中不带横线，
         """
         search_regex = [
-            r'[a-z]{2,5}\d{3}',  # mkbd120 bf123
+            r'[a-z]{2,5}\d{2,3}',  # mkbd120 bf123
             r'\d{6,}[a-z]{4,}',  # 111111MMMM
         ]
         for regex in search_regex:
@@ -159,6 +160,8 @@ class MyTestCase(unittest.TestCase):
             'OFJE-267': '[69av][OFJE-267]圧倒的美少女が故に標的にされた橋本ありな快楽に堕ちるレ○プベスト8時間--更多视频访问[69av.one',
             'CJOD-269': '@蜂鳥@FENGNIAO131.VIP-CJOD-269_2K',
             'BANK-021': 'HD_BANK-021',
+            'OKP-057': '1080fhd.com_OKP-057',
+            '111920-001': '[psk.la]111920-001-carib-1080p',
         }
 
         for k, v in file_list.items():

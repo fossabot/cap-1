@@ -1,7 +1,7 @@
 from urllib.parse import urljoin
 
 from lxml import etree
-from urllib3.exceptions import HTTPError
+from requests import RequestException
 
 from crawler.crawlerCommon import CrawlerCommon
 from utils.logger import Logger
@@ -24,10 +24,9 @@ class Javdb(CrawlerCommon):
             try:
                 self.query = self.response(url).text
                 break
-            except HTTPError:
+            except RequestException as exc:
+                logger.error(f'request error: {exc}')
                 continue
-            # except:
-            #     continue
         self.query_html = etree.fromstring(self.query, etree.HTMLParser())
         urls = self.query_html.xpath('//div[@class="grid-item column"]/a/@href')
         ids = self.query_html.xpath('//div[@class="grid-item column"]/a/div[contains(@class, "uid")]/text()')

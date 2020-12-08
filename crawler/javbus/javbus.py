@@ -2,6 +2,7 @@ import re
 from urllib.parse import urljoin
 
 from lxml import etree
+from requests import RequestException
 
 from crawler.crawlerCommon import CrawlerCommon
 from utils.logger import Logger
@@ -22,9 +23,11 @@ class Javbus(CrawlerCommon):
 
                 self._response = self.response(urljoin(url, number)).text
                 break
-            # except HTTPError:
-            finally:
+            except RequestException as exc:
+                logger.error(f'request error: {exc}')
                 continue
+            except Exception:
+                raise Exception
         self.html = etree.fromstring(self._response, etree.HTMLParser())
 
     def title(self):
@@ -104,10 +107,10 @@ class JavbusBuilder:
 
 if __name__ == "__main__":
     # for test
-    pass
-    # from core.cli import get_cfg_defaults
-    #
-    # cfgs = get_cfg_defaults()
-    # jav = Javbus("ABP-454", cfgs)
-    # data = jav.get_data(Javbus)
-    # print(data.title)
+    # pass
+    from core.cli import get_cfg_defaults
+
+    cfgs = get_cfg_defaults()
+    jav = Javbus("ABP-454", cfgs)
+    data = jav.get_data(Javbus)
+    print(data.title)

@@ -1,6 +1,7 @@
 import heapq
 import re
 import shutil
+from collections import defaultdict
 
 from crawler.requestHandler import RequestHandler
 from utils.logger import Logger
@@ -8,7 +9,15 @@ from utils.logger import Logger
 logger = Logger()
 
 
-class Metadata(dict):
+class Metadata(defaultdict):
+    """
+    A dictionary supporting dot notation. and nested access
+    do not allow to convert existing dict object recursively
+    """
+
+    def __init__(self):
+        super(Metadata, self).__init__(Metadata)
+
     def __getattr__(self, key):
         try:
             return self[key]
@@ -18,14 +27,25 @@ class Metadata(dict):
     def __setattr__(self, key, value):
         self[key] = value
 
-    # def __delattr__(self, key):
-    #     try:
-    #         del self[key]
-    #     except KeyError as k:
-    #         raise AttributeError(k)
 
-    def __repr__(self):
-        return dict.__repr__(self)
+# class Metadata(dict):
+#     def __getattr__(self, key):
+#         try:
+#             return self[key]
+#         except KeyError:
+#             return ''
+#
+#     def __setattr__(self, key, value):
+#         self[key] = value
+#
+#     # def __delattr__(self, key):
+#     #     try:
+#     #         del self[key]
+#     #     except KeyError as k:
+#     #         raise AttributeError(k)
+#
+#     def __repr__(self):
+#         return dict.__repr__(self)
 
 
 class CrawlerCommon(RequestHandler):

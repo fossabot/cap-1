@@ -78,7 +78,8 @@ def number_parser(filename):
             r'.com',
             r'nyap2p',
             r'22-sht.me',
-            r'xxx'
+            r'xxx',
+            r'carib '
         ]
         for regex in regex_list:
             st = re.sub(regex, '', st, flags=re.I)
@@ -123,7 +124,7 @@ def number_parser(filename):
         """
         search_regex = [
             r'FC2[-_]\d{6,}',  # fc2-111111
-            r'[a-z]{2,5}[-_]\d{3}',  # bf-123 abp-454 mkbd-120  kmhrs-026
+            r'[a-z]{2,5}[-_]\d{2,3}',  # bf-123 abp-454 mkbd-120  kmhrs-026
             r'[a-z]{4}[-_][a-z]\d{3}',  # mkbd-s120
             r'\d{6,}[-_][a-z]{4,}',  # 111111-MMMM
             r'\d{6,}[-_]\d{3,}',  # 111111-111
@@ -141,7 +142,7 @@ def number_parser(filename):
         应该只有几种不带横线，
         """
         search_regex = [
-            r'[a-z]{2,5}\d{3}',  # bf123 abp454 mkbd120  kmhrs026
+            r'[a-z]{2,5}\d{2,3}',  # bf123 abp454 mkbd120  kmhrs026
             r'\d{6,}[a-z]{4,}',  # 111111MMMM
         ]
         for regex in search_regex:
@@ -237,15 +238,15 @@ def extra_tag(file_path: Path, data):
     file_name = file_path.name
     data.extra = {}
     if '流出' in file_name or 'leaked' in file_name.lower():
-        data.extra['leaked'] = 'Leaked'
+        data.extra.leaked = 'Leaked'
 
     if '-cd' in file_name.lower():
         searchobj = re.search(r'-cd\d', file_name, flags=re.I)
         if searchobj:
-            data.extra['part'] = searchobj.group()
+            data.extra.part = searchobj.group()
 
     if '-c' in file_name.lower() or '中文' in file_name or '字幕' in file_name:
-        data.extra['sub'] = '-C'
+        data.extra.sub = '-C'
 
     return data
 
@@ -288,13 +289,12 @@ def check_name_length(name, max_title_len) -> str:
     return name
 
 
-def create_folder_move_file(old_file_path, search_path, data, cfg):
+def create_successfull_folder(search_path, data, cfg):
     """
     use metadate replace location_rule, create folder
     使用爬取的元数据替换路径规则，再创建文件。
     根据 / 划分层级，检查每层文件夹的名称长度
     Args:
-        old_file_path:
         cfg:
         search_path:
         data: metadata
@@ -309,9 +309,12 @@ def create_folder_move_file(old_file_path, search_path, data, cfg):
     new_folder = None
     for name in location_rule.split('/'):
         name = check_name_length(name, cfg.name_rule.max_title_len)
-        output_folder = create_folder(search_path, cfg.name_rule.success_output_folder)
+        output_folder = create_successfull_folder(search_path, cfg.name_rule.success_output_folder, cfg)
         new_folder = mkdir(output_folder.joinpath(name))
-    assert new_folder is not None
+    return new_folder
+
+
+def move_file(old_file_path, new_folder_path, data, cfg):
     # 替换数据，检查长度，移动和重命名文件，
     # check length of name
     naming_rule = check_name_length(cfg.name_rule.naming_rule, cfg.name_rule.max_title_len)
@@ -321,7 +324,7 @@ def create_folder_move_file(old_file_path, search_path, data, cfg):
         file_name += '-' + mark
 
     file_name += old_file_path.suffix
-    new_file_path = new_folder.joinpath(file_name)
+    new_file_path = new_folder_path.joinpath(file_name)
     mv(old_file_path, new_file_path)
     return new_file_path
 
