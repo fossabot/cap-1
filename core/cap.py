@@ -2,10 +2,12 @@ import concurrent.futures
 from pathlib import Path
 
 from core.comm import (
+    mv,
     number_parser,
+    check_number_parser,
     create_folder,
     check_data_state,
-    mv,
+    extra_tag,
     create_folder_move_file,
     write_nfo
 )
@@ -16,7 +18,7 @@ from crawler.crawlerCommon import (
 from crawler.registerService import auto_register_service
 from utils.logger import Logger
 
-thePoolsize = 5
+thePoolsize = 3
 
 logger = Logger()
 
@@ -34,6 +36,14 @@ class CapBase:
                  search_path: Path,
                  failed_folder_path: Path,
                  cfg):
+        """
+        Args:
+            file_path: 原文件地址
+            number: 番号
+            search_path: 搜索地址，单文件搜索即为文件地址，否则为文件夹地址
+            failed_folder_path: 创建的失败文件夹地址
+            cfg: 配置
+        """
         self.file = file_path
         self.number = number
         self.search_path = search_path
@@ -68,6 +78,7 @@ class CapBase:
             finally:
                 if not self.data:
                     mv(self.file, self.failed_folder, flag='fail')
+                self.data = extra_tag(self.file, self.data)
 
     def folder_file_utils(self) -> Path:
         """
@@ -82,7 +93,7 @@ class CapBase:
         download and process pic
         处理和下载图片
         Args:
-            created_folder:
+            created_folder: 已创建的文件夹地址
         """
         request = CrawlerCommon(self.cfg)
         img_url = {'poster': self.data.poster, 'thumb': self.data.thumb, 'fanart': self.data.fanart}
@@ -92,8 +103,8 @@ class CapBase:
     def create_nfo(self, new_file_path: Path):
         """
         创建 nfo 文件
-        Returns:
-            object:
+        Args:
+            new_file_path: 用于 nfo 名称和 nfo文件位置
         """
 
         return write_nfo(new_file_path, self.data, self.cfg)
@@ -111,6 +122,14 @@ class CapBase:
 
 class Cap:
     def __init__(self, target, cfg):
+        """
+        判断传入类型
+        为 list 即单文件搜索
+        为 dict 即文件夹搜索，进行番号提取
+        Args:
+            target: 命令行传入
+            cfg:
+        """
         if isinstance(target, list):
             self.file = target[0]
             self.id = target[1]
@@ -120,27 +139,26 @@ class Cap:
             self.files, = target.values()
             self.ids = [number_parser(f) for f in self.files]
         self.cfg = cfg
-        self.failed = self.failed_folder()
+        self.failed = self._failed_folder
 
-    def failed_folder(self):
+    @property
+    def _failed_folder(self):
+        """
+        创建失败文件夹，根据文件和文件夹判断传入路径
+        Returns:
+
+        """
         if not self.cfg.common.debug:
             if hasattr(self, 'folder'):
                 return create_folder(self.folder, self.cfg)
             return create_folder(self.file, self.cfg)
 
-    def check_number_parser(self, target):
-        logger.info('file pointing number', extra={'dict': target})
-        flag = input('change number(c) or continue(enter) \n')
-        if flag.lower() == 'c':
-            file_id = input('use [ <Serial_number><space>number ], eg 4 ABP-454\n')
-            try:
-                target['id'][file_id.split()[0] - 1] = file_id.split()[1]
-                self.check_number_parser(target)
-            except KeyError:
-                raise
-        return target
-
     def mutil_process(self, target):
+        """
+        文件夹搜索，并发
+        Args:
+            target:
+        """
         futures = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=thePoolsize) as pool:
             for f, n in target.items():
@@ -161,5 +179,5 @@ class Cap:
             return cap()
         target = dict(zip(self.files, self.ids))
         if self.cfg.debug.check_number_parser:
-            target = self.check_number_parser(target)
+            target = check_number_parser(target)
             self.mutil_process(target)

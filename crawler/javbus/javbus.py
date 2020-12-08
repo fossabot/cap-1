@@ -2,12 +2,8 @@ import re
 from urllib.parse import urljoin
 
 from lxml import etree
-from urllib3.exceptions import HTTPError
 
-from crawler.crawlerCommon import (
-    CrawlerCommon,
-    Metadata
-)
+from crawler.crawlerCommon import CrawlerCommon
 from utils.logger import Logger
 
 logger = Logger()
@@ -22,27 +18,20 @@ class Javbus(CrawlerCommon):
         super().__init__(cfg)
         for url in self._url:
             try:
-                logger.info(f'\nusing javbus searching: {number}, using ling {url}')
+                logger.info(f'using javbus searching: {number}, using link {url}')
 
-                self.response = self.response(urljoin(url, number)).text
+                self._response = self.response(urljoin(url, number)).text
                 break
-            except HTTPError:
+            # except HTTPError:
+            finally:
                 continue
-        self.html = etree.fromstring(self.response, etree.HTMLParser())
-        self.data = Metadata()
-
-    def get_data(self):
-        for key, fun in Javbus.__dict__.items():
-            if type(fun).__name__ == 'function' and "_" not in key:
-                fun(self)
-        return self.data
+        self.html = etree.fromstring(self._response, etree.HTMLParser())
 
     def title(self):
         """
         title
         """
-        _title = str(self.html.xpath('//div[@class="container"]/div/div[1]/a/img/@title'))
-        title = _title.strip(" ['']").replace(' ', '-')
+        title = str(self.html.xpath('//div[@class="container"]/div/div[1]/a/img/@title'))
         try:
             self.data.title = re.sub('n\d+-', '', title)
         except AttributeError:
@@ -56,12 +45,12 @@ class Javbus(CrawlerCommon):
         info = self.html.xpath('//div[@class="col-md-3 info"]')
         for i in info:
             # number
-            self.data.id = str(i.xpath('//p[1]/span[2]/text()')).strip(" ['']")
+            self.data.id = str(i.xpath('//p[1]/span[2]/text()'))
             runtime = i.xpath('//p[position()>1 and position()<4]/text()')
             # release
             self.data.release = runtime[0]
             # runtime
-            self.data.runtime = runtime[1].strip(" ['']分鐘")
+            self.data.runtime = runtime[1].replace('分鐘', '')
             ret4 = i.xpath('ul/div/li//div[@class="star-name"]/a/text()')
             # print(ret4)
             # actor
@@ -71,18 +60,18 @@ class Javbus(CrawlerCommon):
             ret5 = i.xpath('p/span/text()')
             if '導演:' in ret5:
                 # director
-                self.data.director = str(ret3[0]).strip(" ['']")
+                self.data.director = str(ret3[0])
                 # studio
-                self.data.studio = str(ret3[1]).strip(" ['']")
+                self.data.studio = str(ret3[1])
                 # label
-                self.data.label = str(ret3[2]).strip(" ['']")
+                self.data.label = str(ret3[2])
             else:
                 self.data.director = ""
-                self.data.studio = str(ret3[0]).strip(" ['']")
+                self.data.studio = str(ret3[0])
                 # self.data.label = str(ret3[1]).strip(" ['']")
             if '系列:' in ret5:
                 # serise
-                self.data.serise = str(ret3[-1]).strip(" ['']")
+                self.data.serise = str(ret3[-1])
             else:
                 self.data.serise = ""
             # genre
@@ -105,10 +94,20 @@ class Javbus(CrawlerCommon):
 
 class JavbusBuilder:
     def __init__(self):
-        # self.number = number
         self._instance = None
 
     def __call__(self, number, cfg):
         if not self._instance:
             self._instance = Javbus(number, cfg)
-        return self._instance.get_data()
+        return self._instance.get_data(Javbus)
+
+
+if __name__ == "__main__":
+    # for test
+    pass
+    # from core.cli import get_cfg_defaults
+    #
+    # cfgs = get_cfg_defaults()
+    # jav = Javbus("ABP-454", cfgs)
+    # data = jav.get_data(Javbus)
+    # print(data.title)

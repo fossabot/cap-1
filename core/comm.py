@@ -172,6 +172,20 @@ def number_parser(filename):
     return input()
 
 
+def check_number_parser(target):
+    logger.info('file pointing number', extra={'dict': target})
+    flag = input('change number(c) or continue(enter) \n')
+    if flag.lower() == 'c':
+        file_id = input('use [ <Serial_number><space>number ], eg 4 ABP-454\n')
+        try:
+            target['id'][file_id.split()[0] - 1] = file_id.split()[1]
+            check_number_parser(target)
+        except KeyError:
+            logger.error(f'Syntax error: {file_id}  Check once')
+        check_number_parser(target)
+    return target
+
+
 def create_folder(search_path, needed_create):
     """
     create failed folder
@@ -217,6 +231,23 @@ def check_data_state(data) -> object:
     if not data.id or data.id == "null":
         return False
     return True
+
+
+def extra_tag(file_path: Path, data):
+    file_name = file_path.name
+    data.extra = {}
+    if '流出' in file_name or 'leaked' in file_name.lower():
+        data.extra['leaked'] = 'Leaked'
+
+    if '-cd' in file_name.lower():
+        searchobj = re.search(r'-cd\d', file_name, flags=re.I)
+        if searchobj:
+            data.extra['part'] = searchobj.group()
+
+    if '-c' in file_name.lower() or '中文' in file_name or '字幕' in file_name:
+        data.extra['sub'] = '-C'
+
+    return data
 
 
 def replace_date(data, location_rule: str) -> str:
@@ -284,20 +315,15 @@ def create_folder_move_file(old_file_path, search_path, data, cfg):
     # 替换数据，检查长度，移动和重命名文件，
     # check length of name
     naming_rule = check_name_length(cfg.name_rule.naming_rule, cfg.name_rule.max_title_len)
-    new_file_name = replace_date(data, naming_rule)
-    new_file_path = new_folder.joinpath(new_file_name)
+    file_name = replace_date(data, naming_rule)
+
+    for key, mark in data.extra.items():
+        file_name += '-' + mark
+
+    file_name += old_file_path.suffix
+    new_file_path = new_folder.joinpath(file_name)
     mv(old_file_path, new_file_path)
     return new_file_path
-
-
-def extra_tag(file_path: Path):
-    file_name = file_path.name
-    if '-cd' in file_name.lower():
-        pass
-    if '-c.' in file_name.lower() or '中文' in file_name or '字幕' in file_name:
-        pass
-    if '流出' in file_name:
-        pass
 
 
 def write_nfo(file_path, data, cfg):

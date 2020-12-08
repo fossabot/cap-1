@@ -3,10 +3,7 @@ from urllib.parse import urljoin
 from lxml import etree
 from urllib3.exceptions import HTTPError
 
-from crawler.crawlerCommon import (
-    CrawlerCommon,
-    Metadata
-)
+from crawler.crawlerCommon import CrawlerCommon
 from utils.logger import Logger
 
 logger = Logger()
@@ -23,7 +20,7 @@ class Javdb(CrawlerCommon):
         for url in self._url:
             logger.info(f'\nusing javbus searching: {number}, using ling {url}')
             # url = urljoin(url, 'search?q=', number, '&f=all')
-            url = url + 'search?q=' + number + '&f=all'
+            url += 'search?q=' + number + '&f=all'
             try:
                 self.query = self.response(url).text
                 break
@@ -38,13 +35,6 @@ class Javdb(CrawlerCommon):
         _real_url = urljoin(self._url[0], real_url)
         self._response = self.response(_real_url).text
         self.html = etree.fromstring(self._response, etree.HTMLParser())
-        self.data = Metadata()
-
-    def get_data(self):
-        for key, fun in Javdb.__dict__.items():
-            if type(fun).__name__ == 'function' and "_" not in key:
-                fun(self)
-        return self.data
 
     def title(self):
         """
@@ -80,7 +70,7 @@ class Javdb(CrawlerCommon):
             elif "日期" in str(ret1):
                 self.data.release = ret2[0]
             elif "時長" in str(ret1):
-                self.data.runtime = ret2[0].replace("分鍾", '').split()
+                self.data.runtime = ret2[0].replace("分鍾", '')
             elif "導演" in str(ret1):
                 self.data.director = ret2[0]
             elif "片商" in str(ret1):
@@ -102,14 +92,15 @@ class JavdbBuilder:
     def __call__(self, number, cfg):
         if not self._instance:
             self._instance = Javdb(number, cfg)
-        return self._instance.get_data()
+        return self._instance.get_data(Javdb)
 
 
 if __name__ == "__main__":
-    from core.cli import get_cfg_defaults
-
-    cfgs = get_cfg_defaults()
-    jav = Javdb("FC2-1591505", cfgs)
-    data = jav.get_data()
-    print(data.released)
+    # for test
     pass
+    # from core.cli import get_cfg_defaults
+    #
+    # cfgs = get_cfg_defaults()
+    # jav = Javdb("FC2-1591505", cfgs)
+    # data = jav.get_data()
+    # print(data.released)

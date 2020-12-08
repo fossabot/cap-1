@@ -32,14 +32,7 @@ class CrawlerCommon(RequestHandler):
 
     def __init__(self, cfg):
         super().__init__(cfg)
-        # self.__handler = RequestHandler()
-
-    # @property
-    # def _handler(self):
-    #     """
-    #     Return the `RequestHandler` of object.
-    #     """
-    #     return self.__handler
+        self.data = Metadata()
 
     def response(self, url: str, **kwargs):
         """
@@ -49,6 +42,12 @@ class CrawlerCommon(RequestHandler):
 
     def search(self):
         pass
+
+    def get_data(self, instance):
+        for key, fun in instance.__dict__.items():
+            if type(fun).__name__ == 'function' and "_" not in key:
+                fun(self)
+        return self.data
 
     def download(self, url, file_name):
         r = self.response(url, stream=True)
@@ -103,6 +102,11 @@ class WebsitePriority(PriorityQueue):
                 break
 
     def sort_website(self, number):
+        """
+        按照特定 id 重新排序
+        Args:
+            number:
+        """
         if re.match(r'^\d{5,}', number) or "heyzo" in number.lower():
             self.arrange("avsox", 1)
         elif re.match(r'\d+[a-zA-Z]+-\d+', number) or "siro" in number.lower():
@@ -115,3 +119,4 @@ class WebsitePriority(PriorityQueue):
             self.arrange("fc2", 1)
         elif "rj" in number.lower():
             self.arrange("dlsite", 1)
+
