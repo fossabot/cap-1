@@ -1,7 +1,6 @@
-from urllib.parse import urljoin
+import random
 
-from defusedxml import etree
-from requests import RequestException
+from requests import Response
 
 from crawler.crawlerCommon import CrawlerCommon
 from utils.logger import Logger
@@ -11,29 +10,33 @@ logger = Logger()
 
 class Javdb(CrawlerCommon):
     _url = ["https://javdb.com/",
-            "https://javdb4.com/"
+            "https://javdb4.com/",
+            "https://javdb6.com/"
             ]
 
     def __init__(self, number, cfg):
         super().__init__(cfg)
-        # self.number = number
-        for url in self._url:
-            logger.info(f'\nusing javbus searching: {number}, using ling {url}')
-            # url = urljoin(url, 'search?q=', number, '&f=all')
-            url += 'search?q=' + number + '&f=all'
-            try:
-                self.query = self.response(url).text
-                break
-            except RequestException as exc:
-                logger.error(f'request error: {exc}')
-                continue
-        self.query_html = etree.fromstring(self.query, etree.HTMLParser())
-        urls = self.query_html.xpath('//div[@class="grid-item column"]/a/@href')
-        ids = self.query_html.xpath('//div[@class="grid-item column"]/a/div[contains(@class, "uid")]/text()')
-        real_url = urls[ids.index(number)]
-        _real_url = urljoin(self._url[0], real_url)
-        self._response = self.response(_real_url).text
-        self.html = etree.fromstring(self._response, etree.HTMLParser())
+
+        res = self.search_link_by_google(number, self._url)
+        if res is not None:
+            self.html = res
+        else:
+            url = random.choice(self._url)
+            search_url = url + 'search?q=' + number + '&f=all'
+            url_xpath = '//div[@class="grid-item column"]/a/@href'
+            id_xpath = '//div[@class="grid-item column"]/a/div[contains(@class, "uid")]/text()'
+            self.html = self.search(number, search_url, '', url_xpath, id_xpath)
+
+    def _get(self, url: str, params: dict = None, **kwargs) -> Response:
+        self.session.headers.update(
+            {
+                'Cookie': self.cfg.request.javbd_cookie,
+                'referer': 'https://javdb.com/'
+            }
+        )
+        response = self.session.get(url, timeout=self.timeout, params=params, **kwargs)
+        response.encoding = 'utf-8'
+        return response
 
     def title(self):
         """
@@ -83,6 +86,15 @@ class Javdb(CrawlerCommon):
             elif "演員" in str(ret1):
                 self.data.actor = ret2
 
+    def get_data(self, instance):
+        """
+        运行类中所有不带下划线的方法，返回数据
+        """
+        for _key, _fun in instance.__dict__.items():
+            if type(_fun).__name__ == 'function' and "_" not in _key:
+                _fun(self)
+        return self.data
+
 
 class JavdbBuilder:
     def __init__(self):
@@ -96,10 +108,10 @@ class JavdbBuilder:
 
 if __name__ == "__main__":
     # for test
-    pass
-    # from core.cli import get_cfg_defaults
-    #
-    # cfgs = get_cfg_defaults()
-    # jav = Javdb("FC2-1591505", cfgs)
-    # data = jav.get_data()
-    # print(data.released)
+    # pass
+    from core.cli import get_cfg_defaults
+
+    cfgs = get_cfg_defaults()
+    jav = Javdb("ABP-454", cfgs)
+    data = jav.get_data(Javdb)
+    print(data.title)

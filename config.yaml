@@ -10,6 +10,8 @@ proxy:
   enable: False
   type: socks5
   host:
+request:
+  javbd_cookie: ''
 priority:
   website: [ "javbus", "javdb" ]
 name_rule:
@@ -17,4 +19,4 @@ name_rule:
   naming_rule: number-title
   max_title_len: 50
 exclude:
-  folders: [ failed,output,escape ]
+  folders: [ failed, output, escape ]

@@ -1,4 +1,5 @@
 # https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
+from time import sleep
 from urllib.request import getproxies
 
 import requests
@@ -27,7 +28,7 @@ class RequestHandler:
         self.timeout = cfg.request.timeout
         self.total = cfg.request.total
         self.backoff_factor = cfg.request.backoff_factor
-
+        self.delay = cfg.request.delay
         self._user_agent = Factory.create()
         self.cfg = cfg
 
@@ -73,7 +74,7 @@ class RequestHandler:
         session.hooks['response'] = [assert_status_hook]
         # use faker generate fake user-agent
         session.headers.update({
-            "User-Agent": self._user_agent.user_agent()
+            "User-Agent": self._user_agent.user_agent(),
         })
         session.proxies.update(self.proxy_strategy)
         return session
@@ -82,6 +83,7 @@ class RequestHandler:
         """
         Returns the GET request encoded in `utf-8`.
         """
+        sleep(self.delay)
         response = self.session.get(url, timeout=self.timeout, params=params, **kwargs)
         response.encoding = 'utf-8'
         return response

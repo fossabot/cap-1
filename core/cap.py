@@ -29,7 +29,7 @@ logger = Logger()
 def thread_pool(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        return asyncio.wrap_future(ThreadPoolExecutor().submit(f, *args, **kwargs))
+        return asyncio.wrap_future(ThreadPoolExecutor(max_workers=5).submit(f, *args, **kwargs))
 
     return wrap
 
@@ -72,24 +72,22 @@ class CapBase:
         """
         # priority init， get sorted website
         priority = WebsitePriority(self.cfg.priority.website)
-        priority.sort_website(self.number)
+        # priority.sort_website(self.number)
         # 自动注册 crawler 文件夹中的爬虫类
         services = auto_register_service()
         while not priority.empty():
             # noinspection PyBroadException
             try:
+                logger.info(f'searching: {self.number}')
                 self.data = services.get(priority.pop(), self.number, self.cfg)
                 if check_data_state(self.data):
+                    self.data = extra_tag(self.file, self.data)
                     break
                 continue
             # 这里太宽泛了，很容易跳到这里，添加 finally 来移动文件夹。
             except Exception as exc:
                 logger.error(f'No data obtained: {exc}')
                 continue
-            finally:
-                if not self.data:
-                    mv(self.file, self.failed_folder, flag='fail')
-                self.data = extra_tag(self.file, self.data)
 
     def folder_utils(self) -> Path:
         """
@@ -103,25 +101,28 @@ class CapBase:
 
         return move_file(self.file, created_folder, self.data, self.cfg)
 
-    @thread_pool
-    def img_dowload(self, created_folder: Path, url, name):
-        request = CrawlerCommon(self.cfg)
+    # @thread_pool
+    def img_dowload(self, request, created_folder: Path, url, name):
+        # request = CrawlerCommon(self.cfg)
         request.download(url, created_folder.joinpath(name + 'jpg'))
 
-    async def img_utils(self, created_folder: Path):
+    def img_utils(self, created_folder: Path):
         """
         download and process pic
         处理和下载图片
         Args:
             created_folder: 已创建的文件夹地址
         """
-        # request = CrawlerCommon(self.cfg)
+        request = CrawlerCommon(self.cfg)
         # 伪代码
         img_url = {'poster': self.data.poster, 'thumb': self.data.thumb, 'fanart': self.data.fanart}
-        for name, url in img_url.items():
-            task = asyncio.create_task(self.img_dowload(created_folder, url, name))
-            await task
-            # request.download(url, created_folder.joinpath(name + 'jpg'))
+        # tasks = [self.img_dowload(request, created_folder, img_url[key], key) for key in img_url]
+        # await asyncio.gather(*tasks)
+
+        # for name, url in img_url.items():
+        #     task = asyncio.create_task(self.img_dowload(request, created_folder, url, name))
+        #     await task
+        #     request.download(url, created_folder.joinpath(name + 'jpg'))
         # //TODO 裁剪，水印
 
     def create_nfo(self, new_file_path: Path):
@@ -133,17 +134,16 @@ class CapBase:
 
         write_nfo(new_file_path, self.data, self.cfg)
 
-    def process(self):
+    def run(self):
         self.get_metadata()
-        created_folder = self.failed_folder
+        if not self.data:
+            mv(self.file, self.failed_folder, flag='fail')
 
-        # tasks = [self.file_utils(created_folder), self.img_utils(created_folder)]
-        #
-        # result = await asyncio.gather(*tasks)
-        # new_file_path = result[0]
-        asyncio.run(self.img_utils(created_folder))
-        new_file_path = self.file_utils(created_folder)
-        self.create_nfo(new_file_path)
+        print(self.data.values())
+        # created_folder = self.failed_folder
+        # asyncio.run(self.folder_utils())
+        # new_file_path = self.file_utils(created_folder)
+        # self.create_nfo(new_file_path)
 
 
 class Cap:
@@ -176,16 +176,19 @@ class Cap:
         """
         if not self.cfg.common.debug:
             if hasattr(self, 'folder'):
-                return create_folder(self.folder, self.cfg, )
-            return create_folder(self.file, self.cfg, )
+                return create_folder(self.folder, self.cfg)
+            return create_folder(self.file, self.cfg)
+
+    def mutile_process(self, target):
+        for f, n in target.items():
+            cap = CapBase(f, n, self.folder, self.failed, self.cfg)
+            cap.run()
 
     def start(self):
         if hasattr(self, 'file'):
             cap = CapBase(self.file, self.id, self.file, self.failed, self.cfg)
-            cap.process()
+            cap.run()
         target = dict(zip(self.files, self.ids))
         if self.cfg.debug.check_number_parser:
             target = check_number_parser(target)
-            for f, n in target.items():
-                cap = CapBase(f, n, self.folder, self.failed, self.cfg)
-                cap.process()
+            self.mutile_process(target)

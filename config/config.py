@@ -26,17 +26,18 @@ _C.request.status_forcelist = ["413", "429", "500", "502", "503", "504"]
 _C.request.timeout = 5
 _C.request.total = 3
 _C.request.backoff_factor = 1
-
+_C.request.delay = 1
+_C.request.javbd_cookie = ''''''
 _C.request.freepool = []
 
 _C.name_rule = CN()
-_C.name_rule.location_rule = "actor+number"
+_C.name_rule.location_rule = "actor/number"
 _C.name_rule.naming_rule = "number-title"
 _C.name_rule.max_title_len = 50
 
 _C.priority = CN()
-_C.priority.website = ["javbus", "javdb", "fanza", "xcity",
-                       "mgstage", "fc2", "avsox", "jav321", "javlib", "dlsite"]
+_C.priority.website = ["javbus", "javdb", "javstore"]
+# , "fanza", "xcity", "mgstage", "fc2", "avsox", "jav321", "javlib", "dlsite"
 _C.exclude = CN()
 # _C.exclude.literals = "\()/"
 _C.exclude.folders = ["failed", "output", "escape"]

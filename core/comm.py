@@ -236,7 +236,7 @@ def check_data_state(data) -> object:
 
 def extra_tag(file_path: Path, data):
     file_name = file_path.name
-    data.extra = {}
+    # data.extra = {}
     if '流出' in file_name or 'leaked' in file_name.lower():
         data.extra.leaked = 'Leaked'
 
