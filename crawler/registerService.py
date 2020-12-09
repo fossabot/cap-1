@@ -1,9 +1,9 @@
 from importlib import import_module
 from pathlib import Path
 
-from utils.logger import Logger
+from utils.logger import setup_logger
 
-logger = Logger()
+logger = setup_logger()
 
 
 def auto_register_service():

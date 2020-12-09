@@ -3,12 +3,12 @@ import shutil
 import sys
 from pathlib import Path
 
-from utils.logger import Logger
+from utils.logger import setup_logger
 
 # import requests
 # from defusedxml import ElementTree
 
-logger = Logger()
+logger = setup_logger()
 
 
 # def free_proxy_pool(cfg):

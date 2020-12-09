@@ -1,8 +1,8 @@
 pathlib
 requests
-colorama
 yacs
 faker
 importlib
 lxml
 urllib3
+termcolor

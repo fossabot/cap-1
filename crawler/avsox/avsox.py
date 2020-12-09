@@ -1,9 +1,9 @@
 import re
 
 from crawler.crawlerCommon import CrawlerCommon
-from utils.logger import Logger
+from utils.logger import setup_logger
 
-logger = Logger()
+logger = setup_logger()
 
 
 class Avsox(CrawlerCommon):

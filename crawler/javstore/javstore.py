@@ -1,9 +1,9 @@
 import re
 
 from crawler.crawlerCommon import CrawlerCommon
-from utils.logger import Logger
+from utils.logger import setup_logger
 
-logger = Logger()
+logger = setup_logger()
 
 
 class Javstore(CrawlerCommon):
@@ -37,11 +37,11 @@ class Javstore(CrawlerCommon):
         st = [t.strip() for t in texts if re.search(r'[\S]', t)]
         for i in st:
             if '販売日' in i:
-                self.data.release = re.sub('[販売日|\s]', '', i)
+                self.data.release = re.sub(r'[販売日|\s]', '', i)
             if '販売者' in i:
-                self.data.publisher = re.sub('[販売日|\s]', '', i)
+                self.data.publisher = re.sub(r'[販売日|\s]', '', i)
             if '再生時間' in i:
-                self.data.runtime = re.sub('[再生時間|\s]', '', i)
+                self.data.runtime = re.sub(r'[再生時間|\s]', '', i)
 
     def get_data(self, instance):
         """

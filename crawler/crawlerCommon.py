@@ -7,9 +7,9 @@ from googlesearch import search
 from lxml import etree
 
 from crawler.requestHandler import RequestHandler
-from utils.logger import Logger
+from utils.logger import setup_logger
 
-logger = Logger()
+logger = setup_logger()
 
 
 class Metadata(defaultdict):
@@ -121,7 +121,7 @@ class PriorityQueue:
         return heapq.heappop(self._queue)[-1]
 
     def empty(self):
-        return True if not self._queue else False
+        return bool(not self._queue)
 
     def arrange(self, item, priority):
         """

@@ -9,9 +9,9 @@ from requests.adapters import HTTPAdapter
 from requests.models import Response
 from urllib3.util.retry import Retry
 
-from utils.logger import Logger
+from utils.logger import setup_logger
 
-logger = Logger()
+logger = setup_logger()
 
 
 class RequestHandler:

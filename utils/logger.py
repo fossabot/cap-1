@@ -1,35 +1,36 @@
-import copy
+import functools
 import logging
 import sys
 import time
 from pathlib import Path
 
-import colorama
+from termcolor import colored
 
-# specify colors for different logging levels
-LOG_COLORS = {
-    logging.ERROR: colorama.Fore.RED,
-    logging.WARNING: colorama.Fore.YELLOW,
-    logging.DEBUG: colorama.Fore.WHITE,
-    logging.INFO: colorama.Fore.GREEN,
-    logging.CRITICAL: colorama.Fore.MAGENTA,
+# specify setting for different logging levels
+LOG_FORMATTER = {
+    logging.ERROR: ['red', ''.rjust(4), ['reverse']],
+    logging.WARNING: ['yellow', ''.rjust(2), ['underline']],
+    logging.DEBUG: ['white', ''.rjust(4), ['blink']],
+    logging.INFO: ['green', ''.rjust(5), ['blink']],
+    logging.CRITICAL: ['magenta', ''.rjust(1), ['blink']]
 }
 
 
-class ColorFormatter(logging.Formatter):
-    def format(self, record, *args, **kwargs):
-        # if the corresponding logger has children, they may receive modified
-        # record, so we want to keep it intact
-        new_record = copy.copy(record)
-        if new_record.levelno in LOG_COLORS:
-            # we want levelname to be in different color, so let's modify it
-            new_record.levelname = "{color_begin}{level:8s}{color_end}".format(
-                level=new_record.levelname,
-                color_begin=LOG_COLORS[new_record.levelno],
-                color_end=colorama.Style.RESET_ALL,
+class ColorfulFormatter(logging.Formatter):
+    def __init__(self, *args, **kwargs):
+        super(ColorfulFormatter, self).__init__(*args, **kwargs)
+
+    def formatMessage(self, record):
+        msg = super(ColorfulFormatter, self).formatMessage(record)
+        if record.levelno in LOG_FORMATTER:
+            new_msg = '{prefix}{space}{msg}'.format(
+                prefix=colored(text=record.levelname,
+                               color=LOG_FORMATTER[record.levelno][0],
+                               attrs=LOG_FORMATTER[record.levelno][2]),
+                space=LOG_FORMATTER[record.levelno][1],
+                msg=msg
             )
-        # now we can let standart formatting take care of the rest
-        return super(ColorFormatter, self).format(new_record)
+            return new_msg
 
 
 class ListFilter(logging.Filter):
@@ -40,83 +41,71 @@ class ListFilter(logging.Filter):
     """
 
     def filter(self, record):
-        # extra = {'list': List}
-        # 闲着没事，顺便画了个方框
-        # 增加 map(str, record.list),很大概率传入 Path 对象
         if hasattr(record, 'list'):
-            width = max(map(len, list(map(str, record.list))))
-            record.msg = record.msg + f'\n{"+ "}{"-" * width}{" +"}\n'
-            record.msg += ''.join([f'|{" "}{line:<{width}}{" "}|\n' for line in list(map(str, record.list))])
-            record.msg = record.msg + f'{"+ "}{"-" * width}{" +"}'
+            for v in record.list:
+                record.msg += f'\n\t\t  {v}'
         # extra = {'dict': Dict}
         # 用 count 记数，增加序号，用于检查番号提取（特定需求）
         if hasattr(record, 'dict'):
             count = 1
             for k, v in record.dict.items():
-                record.msg += f'\n No.{count} file: {k} -> id: {v} '
+                record.msg += f'\n\t\t  No.{count:<2d} file: {str(k)} -> id: {v} '
                 count += 1
         return super(ListFilter, self).filter(record)
 
 
-class Logger:
-    def __init__(self):
-        """
-        指定保存日志的文件路径，日志级别，以及调用文件
-        日志等级 debug 只写入log文件，其他都会在控制台打印
-        只有控制台输出有颜色
-        """
+@functools.lru_cache()  # so that calling setup_logger multiple times won't add many handlers
+def setup_logger(name='cap'):
+    """
+    指定保存日志的文件路径，日志级别，以及调用文件
+    日志等级 debug 只写入log文件，其他都会在控制台打印
+    只有控制台输出有颜色
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = False
 
-        # 创建一个logger
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)  # 指定最低的日志级别 critical > error > warning > info > debug
+    ch = logging.StreamHandler(stream=sys.stdout)
+    ch.setLevel(logging.INFO)
+    # 控制台输出使用 ColorFormatter
+    formatter = ColorfulFormatter(
+        '[%(asctime)s %(name)s]: ' + colored("%(message)s", 'cyan'),
+        datefmt="%m/%d",
+    )
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    # ---------------创建一个handler，用于写入日志文件
+    log_time = time.strftime("%m-%d", time.localtime(time.time()))
+    filename = Path(__file__).parent.parent.joinpath(f"{log_time}.log")
+    fh = logging.StreamHandler(_cached_log_stream(filename))
 
-        # 创建一个handler，用于写入日志文件
-        log_time = time.strftime("%Y-%m-%d", time.localtime(time.time()))
-        log_name = Path(__file__).parent.parent.joinpath("{}.log".format(log_time))
-        #  这里进行判断，如果logger.handlers列表为空，则添加，否则，直接去写日志，解决重复打印的问题
-        if not self.logger.handlers:
-            # FileHandler
-            fh = logging.FileHandler(log_name, 'a', encoding='utf-8')
-            fh.setLevel(logging.DEBUG)
+    fh_formatter = logging.Formatter(
+        "[%(asctime)s] %(name)s %(levelname) 8s: %(message)s",
+        datefmt="%m/%d %H:%M:%S"
+    )
+    fh.setFormatter(fh_formatter)
+    fh.setLevel(logging.DEBUG)
+    logger.addHandler(fh)
+    # 按行打印 list 或者 dict
+    logger.addFilter(ListFilter())
 
-            fh_formatter = logging.Formatter(
-                '[%(asctime)s] %(filename)s -> %(funcName)s line:%(lineno)d [%(levelname)s] %(message)s')
-            fh.setFormatter(fh_formatter)
-            # StreamHandler
-            ch = logging.StreamHandler(sys.stdout)
-            ch.setLevel(logging.INFO)
-            # 定义handler的输出格式, 控制台输出使用 ColorFormatter
-            formatter = ColorFormatter('%(levelname)s %(message)s')
-            ch.setFormatter(formatter)
-            # 按行打印 list
+    return logger
 
-            # 给logger添加handler
-            self.logger.addFilter(ListFilter())
-            self.logger.addHandler(fh)
-            self.logger.addHandler(ch)
 
-    def debug(self, msg, *args, **kwargs):
-        self.logger.debug(str(msg), *args, **kwargs)
-
-    def info(self, msg, *args, **kwargs):
-        self.logger.info(str(msg), *args, **kwargs)
-
-    def warning(self, msg, *args, **kwargs):
-        self.logger.warning(str(msg), *args, **kwargs)
-
-    def error(self, msg, *args, **kwargs):
-        self.logger.error(str(msg), *args, **kwargs)
-
-    def critical(self, msg, *args, **kwargs):
-        self.logger.critical(str(msg), *args, **kwargs)
+# cache the opened file object, so that different calls to `setup_logger`
+# with the same file name can safely write to the same file.
+@functools.lru_cache(maxsize=None)
+def _cached_log_stream(filename):
+    return Path.open(filename, "a")
 
 
 if __name__ == '__main__':
-    log = Logger()
-    # d = {'list': ['str1', 'str2', 'str3']}
-    d = {'dict': {'one': 'test_one', 'two': 'test_two'}}
+    log = setup_logger()
+
+    d = {'list': ['str1', 'str2', 'str3']}
+    # d = {'dict': {'one': 'test_one', 'two': 'test_two'}}
     log.info("This shows extra", extra=d)
-    # log.debug("info")
-    # log.error("error")
-    # log.warning("warning")
-    # log.critical("critical")
+    log.info("this is info")
+    log.error("this is error")
+    log.warning("this is warning")
+    log.critical("this is critical")

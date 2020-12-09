@@ -19,11 +19,11 @@ from crawler.crawlerCommon import (
     WebsitePriority
 )
 from crawler.registerService import auto_register_service
-from utils.logger import Logger
+from utils.logger import setup_logger
 
 thePoolsize = 3
 
-logger = Logger()
+logger = setup_logger()
 
 
 def thread_pool(f):

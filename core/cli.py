@@ -4,9 +4,9 @@ from pathlib import Path
 
 from config.config import get_cfg_defaults
 from core.comm import get_video_path_list
-from utils.logger import Logger
+from utils.logger import setup_logger
 
-logger = Logger()
+logger = setup_logger()
 
 
 def set_argparse():
@@ -51,7 +51,7 @@ def load_config():
     def merge_config(path):
         try:
             cfg.merge_from_file(path)
-            logger.info("load config，start searching")
+            logger.info("load config, start searching")
         except Exception as e:
             logger.error(f'config file error:{e}')
 
@@ -80,15 +80,16 @@ def check_input(cfg):
         _file, _id = parser.p.split('->')
         file = Path(_file)
         if file.is_file():
-            logger.info(f'The following video: {_file} -> {_id}will be searched soon')
+            logger.info(f'The following video: {str(file)}  {_id} will be searched soon')
             return [file, _id]
-        logger.info(f'file path error: {_file}')
+        logger.info(f'file path error: {str(file)}')
     except ValueError:
         path = Path(parser.p).resolve()
         if path.is_dir():
             files = get_video_path_list(path, cfg)
             if cfg.common.debug and len(files) > 0:
-                logger.debug(f'the videos in folder: {str(path)} will be searched soon：', extra={'list': files})
+                logger.debug(f'the videos in folder: {str(path)} will be searched soon:',
+                             extra={'list': files})
             folder_files[str(path)] = files
             return folder_files
         logger.info(f'folder path error: {str(path)}')
