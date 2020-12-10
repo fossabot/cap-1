@@ -1,5 +1,4 @@
 # https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
-from time import sleep
 from urllib.request import getproxies
 
 import requests
@@ -83,7 +82,6 @@ class RequestHandler:
         """
         Returns the GET request encoded in `utf-8`.
         """
-        sleep(self.delay)
         response = self.session.get(url, timeout=self.timeout, params=params, **kwargs)
         response.encoding = 'utf-8'
         return response

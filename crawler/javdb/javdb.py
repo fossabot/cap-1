@@ -16,8 +16,10 @@ class Javdb(CrawlerCommon):
 
     def __init__(self, number, cfg):
         super().__init__(cfg)
-
-        res = self.search_link_by_google(number, self._url)
+        # test
+        logger.debug(f'search {number} by javdb')
+        # res = self.search_link_by_google(number, self._url)
+        res = None
         if res is not None:
             self.html = res
         else:
@@ -42,7 +44,7 @@ class Javdb(CrawlerCommon):
         """
         title
         """
-        self.data.title = str(self.html.xpath('//h2[@class="title is-4"]/strong/text()'))
+        self.data.title = str(self.html.xpath('//h2[@class="title is-4"]/strong/text()')[0])
 
     def smallcover(self):
         pass

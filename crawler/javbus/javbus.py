@@ -14,6 +14,8 @@ class Javbus(CrawlerCommon):
 
     def __init__(self, number, cfg):
         super().__init__(cfg)
+        # test
+        logger.debug(f'search {number} by javbus')
         # self.data = Metadata()
         base_url = random.choice(self._url)
         self.html = self.get_parser_html(base_url + number)

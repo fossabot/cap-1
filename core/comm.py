@@ -1,54 +1,10 @@
 import re
-import shutil
-import sys
 from pathlib import Path
 
 from utils.logger import setup_logger
-
-# import requests
-# from defusedxml import ElementTree
+from utils.path import PathHandler
 
 logger = setup_logger()
-
-
-# def free_proxy_pool(cfg):
-#     """
-#     https://github.com/jhao104/proxy_pool
-#     get free proxy
-#     store proxy to config
-#     Args:
-#         cfg:
-#     Returns:
-#
-#     """
-#     all_proxy = requests.get("http://118.24.52.95/get_all/").json()
-#     proxy = []
-#     for p in all_proxy:
-#         proxy.append(p.get('proxy'))
-#     cfg.proxy.freepool = proxy
-#     return cfg
-def mv(target, dest, flag: str = None):
-    """
-    move video file searching failed to failed folder
-    Args:
-        target: org file path
-        dest:
-        flag:
-    """
-    try:
-        shutil.move(target, dest)
-        logger.info(f'move {target.name} to {flag} folder')
-    except Exception as error_info:
-        logger.error(f'fail to move file: {str(error_info)}')
-
-
-def mkdir(target):
-    try:
-        target.mkdir()
-        return target
-    except OSError as exc:
-        logger.error(f'fail to create folder: {str(exc)}')
-        sys.exit()
 
 
 def number_parser(filename):
@@ -124,7 +80,7 @@ def number_parser(filename):
         """
         search_regex = [
             r'FC2[-_]\d{6,}',  # fc2-111111
-            r'[a-z]{2,5}[-_]\d{2,3}',  # bf-123 abp-454 mkbd-120  kmhrs-026
+            r'[a-z]{2,5}[-_]\d{2,4}',  # bf-123 abp-454 mkbd-120  kmhrs-026
             r'[a-z]{4}[-_][a-z]\d{3}',  # mkbd-s120
             r'\d{6,}[-_][a-z]{4,}',  # 111111-MMMM
             r'\d{6,}[-_]\d{3,}',  # 111111-111
@@ -185,22 +141,6 @@ def check_number_parser(target):
             logger.error(f'Syntax error: {file_id}  Check once')
         check_number_parser(target)
     return target
-
-
-def create_folder(search_path, needed_create):
-    """
-    create failed folder
-    Args:
-        needed_create:
-        search_path:
-    """
-    folder = Path(needed_create).resolve()
-
-    # 如果配置文件中路径不是绝对路径
-    if not folder.is_absolute():
-        created = search_path.parents.joinpath(needed_create)
-        return mkdir(created)
-    return mkdir(folder)
 
 
 def get_video_path_list(search_path, cfg):
@@ -310,11 +250,11 @@ def create_successfull_folder(search_path, data, cfg):
     for name in location_rule.split('/'):
         name = check_name_length(name, cfg.name_rule.max_title_len)
         output_folder = create_successfull_folder(search_path, cfg.name_rule.success_output_folder, cfg)
-        new_folder = mkdir(output_folder.joinpath(name))
+        new_folder = PathHandler.mkdir(output_folder.joinpath(name))
     return new_folder
 
 
-def move_file(old_file_path, new_folder_path, data, cfg):
+def rename_move_file(old_file_path, new_folder_path, data, cfg):
     # 替换数据，检查长度，移动和重命名文件，
     # check length of name
     naming_rule = check_name_length(cfg.name_rule.naming_rule, cfg.name_rule.max_title_len)
@@ -325,7 +265,7 @@ def move_file(old_file_path, new_folder_path, data, cfg):
 
     file_name += old_file_path.suffix
     new_file_path = new_folder_path.joinpath(file_name)
-    mv(old_file_path, new_file_path)
+    PathHandler.move(old_file_path, new_file_path)
     return new_file_path
 
 

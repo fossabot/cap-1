@@ -10,6 +10,8 @@ class Avsox(CrawlerCommon):
 
     def __init__(self, number, cfg):
         super().__init__(cfg)
+        # test
+        logger.debug(f'search {number} by avsox')
         # 搜寻 avsox 首页地址
         # transit_url = 'https://tellme.pw/avsox'
         # transit_html = self.get_parser_html(transit_url)

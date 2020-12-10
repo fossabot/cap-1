@@ -44,6 +44,7 @@ class CrawlerCommon(RequestHandler):
         res = self.get(url, **kwargs).text
         return etree.HTML(res)
 
+    # // TODO 只给出了，不适合判断，重写一个
     def search_link_by_google(self, number, site):
         """
         偷懒耍滑之 google search
@@ -174,4 +175,3 @@ class WebsitePriority(PriorityQueue):
             self.arrange("fc2", 1)
         elif "rj" in number.lower():
             self.arrange("dlsite", 1)
-

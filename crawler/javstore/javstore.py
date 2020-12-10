@@ -15,7 +15,8 @@ class Javstore(CrawlerCommon):
 
     def __init__(self, number, cfg):
         super().__init__(cfg)
-
+        # test
+        logger.debug(f'search {number} by javstore')
         res = self.search_link_by_google(number, self._url[0])
         if res is not None:
             self.html = res

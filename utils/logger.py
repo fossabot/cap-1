@@ -66,7 +66,8 @@ def setup_logger(name='cap'):
     logger.propagate = False
 
     ch = logging.StreamHandler(stream=sys.stdout)
-    ch.setLevel(logging.INFO)
+    # for deubg
+    ch.setLevel(logging.DEBUG)
     # 控制台输出使用 ColorFormatter
     formatter = ColorfulFormatter(
         '[%(asctime)s %(name)s]: ' + colored("%(message)s", 'cyan'),

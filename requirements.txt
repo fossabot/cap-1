@@ -1,4 +1,3 @@
-pathlib
 requests
 yacs
 faker
@@ -6,3 +5,4 @@ importlib
 lxml
 urllib3
 termcolor
+pathlib3x
