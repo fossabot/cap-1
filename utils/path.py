@@ -1,6 +1,5 @@
 import shutil
-
-from pathlib3x import Path
+from pathlib import Path
 
 from utils.logger import setup_logger
 
@@ -8,8 +7,6 @@ logger = setup_logger()
 
 
 class PathHandler:
-    def __int__(self):
-        self.log = setup_logger()
 
     @staticmethod
     def move(src: Path, dest: Path, flag: str = None):

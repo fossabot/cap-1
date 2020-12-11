@@ -1,15 +1,14 @@
 import asyncio
 import time
 
-from core.cap import Capture
+from core.cap import capture
 
 
 def main():
     """main entry"""
     start_time = time.perf_counter()
 
-    cap = Capture()
-    asyncio.run(cap.start())
+    asyncio.run(capture())
 
     end_time = time.perf_counter()
     print(f'search video in {end_time - start_time} seconds')

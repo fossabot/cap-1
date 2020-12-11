@@ -44,7 +44,7 @@ class CrawlerCommon(RequestHandler):
         res = self.get(url, **kwargs).text
         return etree.HTML(res)
 
-    # // TODO 只给出了，不适合判断，重写一个
+    # // TODO 只给出了link，不适合判断，重写一个
     def search_link_by_google(self, number, site):
         """
         偷懒耍滑之 google search
@@ -100,6 +100,10 @@ class CrawlerCommon(RequestHandler):
                 shutil.copyfileobj(r.raw, f)
             logger.info(f'sucessfully download: {file_name}')
         logger.warning(f'fail download: {file_name}')
+
+    def download_all(self, img_url: dict, created_folder):
+        for name, url in img_url.items():
+            self.download(url, created_folder.joinpath(name + 'jpg'))
 
 
 class PriorityQueue:

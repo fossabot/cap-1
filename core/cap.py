@@ -4,12 +4,8 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from pathlib import Path
 
-from core.cli import (
-    load_config,
-    check_input
-)
+from core.argument import load_argument
 from core.comm import (
-    number_parser,
     check_data_state,
     extra_tag,
     create_successfull_folder,
@@ -126,8 +122,7 @@ class CapBase:
         request = CrawlerCommon(self.cfg)
         # 伪代码
         img_url = {'poster': data.poster, 'thumb': data.thumb, 'fanart': data.fanart}
-        for name, url in img_url.items():
-            request.download(url, created_folder.joinpath(name + 'jpg'))
+        request.download_all(img_url, created_folder)
         # //TODO 裁剪，水印
 
     @thread_pool
@@ -141,10 +136,7 @@ class CapBase:
 
         write_nfo(new_file_path, data, self.cfg)
 
-
-class Cap(CapBase):
-
-    async def chain(self) -> None:
+    async def start(self):
         start_time = time.perf_counter()
         logger.info(f'searching: {self.number}')
         data = await self.get_metadata()
@@ -157,35 +149,15 @@ class Cap(CapBase):
         logger.debug(f"searching: {self.number} (took {end_time:0.2f} seconds).")
 
 
-class Capture:
-
-    def __init__(self):
-        """
-        判断传入类型
-        """
-        self.cfg = load_config()
-        target = check_input(self.cfg)
-
-        if 'file' in target:
-            self.file = target['file']
-            self.number = target['number']
-            self.folder = self.file
-        else:
-            self.folder, = target
-            self.file, = target.values()
-            self.number = [number_parser(f) for f in self.file]
-
-        if not self.cfg.common.debug:
-            filed_folder = self.cfg.common.failed_output_folder
-            self.failed = PathHandler.create_folder(self.folder, filed_folder)
-        else:
-            self.failed = ''
-
-    async def start(self):
-        tasks = []
-        print(self.file)
-        print(self.number)
-        target = dict(zip(self.file, self.number))
-        for file, number in target.items():
-            tasks.append(Cap.parameter(file, number, self.folder, self.failed, self.cfg).chain())
-        await asyncio.gather(*tasks)
+async def capture():
+    folder, file, number, cfg = load_argument()
+    if not cfg.common.debug:
+        filed_folder = cfg.common.failed_output_folder
+        failed = PathHandler.create_folder(folder, filed_folder)
+    else:
+        failed = ''
+    target = dict(zip(file, number))
+    tasks = []
+    for file, number in target.items():
+        tasks.append(CapBase.parameter(file, number, folder, failed, cfg).start())
+    await asyncio.gather(*tasks)

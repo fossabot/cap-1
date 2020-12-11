@@ -5,4 +5,4 @@ importlib
 lxml
 urllib3
 termcolor
-pathlib3x
+pathlib
