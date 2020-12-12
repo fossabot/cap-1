@@ -1,101 +1,88 @@
 import random
 
-from requests import Response
-
-from crawler.crawlerCommon import CrawlerCommon
+from crawler.crawlerCommon import (
+    CrawlerCommon,
+    GoogleSearch,
+    call
+)
 from utils.logger import setup_logger
 
 logger = setup_logger()
 
 
 class Javdb(CrawlerCommon):
-    _url = ["https://javdb.com/",
-            "https://javdb4.com/",
-            "https://javdb6.com/"
+    _url = ["https://javdb.com",
+            "https://javdb4.com",
+            "https://javdb6.com"
             ]
 
     def __init__(self, number, cfg):
         super().__init__(cfg)
-        # test
+
         logger.debug(f'search {number} by javdb')
-        # res = self.search_link_by_google(number, self._url)
-        res = None
-        if res is not None:
-            self.html = res
+        self.base_url = random.choice(self._url)
+        self.headers = {
+            'Cookie': cfg.request.javbd_cookie,
+            'referer': 'https://javdb.com/'
+        }
+        self.number = number
+        google = GoogleSearch(cfg)
+        url = google.search(self.number, self.base_url.replace('https://', ''))
+        if url is not None:
+            self.html = self.get_parser_html(url, headers=self.headers)
         else:
-            url = random.choice(self._url)
-            search_url = url + 'search?q=' + number + '&f=all'
-            url_xpath = '//div[@class="grid-item column"]/a/@href'
-            id_xpath = '//div[@class="grid-item column"]/a/div[contains(@class, "uid")]/text()'
-            self.html = self.search(number, search_url, '', url_xpath, id_xpath)
+            self.html = self.search_url()
 
-    def _get(self, url: str, params: dict = None, **kwargs) -> Response:
-        self.session.headers.update(
-            {
-                'Cookie': self.cfg.request.javbd_cookie,
-                'referer': 'https://javdb.com/'
-            }
-        )
-        response = self.session.get(url, timeout=self.timeout, params=params, **kwargs)
-        response.encoding = 'utf-8'
-        return response
+    def search_url(self):
+        search_url = self.base_url + '/search?q=' + self.number + '&f=all'
+        xpath = [
+            '//div[@class="grid-item column"]',
+            '//a/div[@class="uid"]/text()',
+            '//a/@href'
+        ]
+        real_url = self.search(self.number, search_url, xpath[0], xpath[1], xpath[2])
+        if real_url:
+            return self.get_parser_html(self.base_url + real_url)
 
-    def title(self):
-        """
-        title
-        """
-        self.data.title = str(self.html.xpath('//h2[@class="title is-4"]/strong/text()')[0])
-
+    @call
     def smallcover(self):
         pass
 
-    def cover(self):
-        try:
-            self.data.cover = self.html.xpath('//img[@class="video-cover"]/@src')[0]
-        except IndexError:
-            self.data.cover = ""
-
+    # def cover(self):
+    #     try:
+    # self.data.cover = self.html.xpath('//img[@class="video-cover"]/@src')
+    # except IndexError:
+    #     self.data.cover = ""
+    @call
     def outline(self):
         pass
 
+    @call
     def info(self):
         """
         number, release, length, actor, director, studio, label, serise, genre
         """
+        (self.data.title,) = self.html.xpath('//h2[@class="title is-4"]/strong/text()')
 
-        parents = self.html.xpath('//nav[@class="panel video-panel-info"]/div')
+        parents = self.html.xpath('//nav[@class="panel video-panel-info"]', first=True)
+        print(parents)
+        self.data.id = parents.xpath('//div[1]/a/@data-clipboard-text', first=True)
 
-        for ret in parents:
-            ret1 = ret.xpath('strong/text()')
-            ret2 = ret.xpath('span//text()')
-            # print(ret1)
-            if "番號" in str(ret1):
-                self.data.id = ret.xpath('a/@data-clipboard-text')[0]
-            elif "日期" in str(ret1):
-                self.data.release = ret2[0]
-            elif "時長" in str(ret1):
-                self.data.runtime = ret2[0].replace("分鍾", '')
-            elif "導演" in str(ret1):
-                self.data.director = ret2[0]
-            elif "片商" in str(ret1):
-                self.data.maker = ret2[0]
-            elif "發行" in str(ret1):
-                self.data.publisher = ret2[0]
-            elif "系列" in str(ret1):
-                self.data.series = ret2[0]
-            elif "類別" in str(ret1):
-                self.data.tags = ret2
-            elif "演員" in str(ret1):
-                self.data.actor = ret2
-
-    def get_data(self, instance):
-        """
-        运行类中所有不带下划线的方法，返回数据
-        """
-        for _key, _fun in instance.__dict__.items():
-            if type(_fun).__name__ == 'function' and "_" not in _key:
-                _fun(self)
-        return self.data
+        for element in parents.xpath('//div'):
+            if element.xpath('//strong[contains(., "日期")]'):
+                self.data.release = element.xpath('//span/text()', first=True)
+            if element.xpath('//strong[contains(., "時長")]'):
+                self.data.runtime = element.xpath('//span/text()', first=True).replace("分鍾", '')
+            if element.xpath('//strong[contains(., "導演")]'):
+                self.data.director = element.xpath('//span/a/text()', first=True)
+            if element.xpath('//strong[contains(., "片商")]'):
+                self.data.maker = element.xpath('//span/a/text()', first=True)
+            if element.xpath('//strong[contains(., "系列")]'):
+                self.data.series = element.xpath('//span/a/text()', first=True)
+            if element.xpath('//strong[contains(., "類別")]'):
+                self.data.tags = element.xpath('//span/a/text()')
+            if element.xpath('//strong[contains(., "演員")]'):
+                self.data.actor = element.xpath('//span/a/text()')
 
 
 class JavdbBuilder:
@@ -105,15 +92,19 @@ class JavdbBuilder:
     def __call__(self, number, cfg):
         if not self._instance:
             self._instance = Javdb(number, cfg)
-        return self._instance.get_data(Javdb)
+            for method in dir(self._instance):
+                fun = getattr(self._instance, method)
+                if getattr(fun, "is_callable", False):
+                    fun()
+        return self._instance.data
 
 
 if __name__ == "__main__":
     # for test
     # pass
-    from core.cli import get_cfg_defaults
+    from utils.config import get_cfg_defaults
 
     cfgs = get_cfg_defaults()
     jav = Javdb("ABP-454", cfgs)
-    data = jav.get_data(Javdb)
-    print(data.title)
+    # print(data)
+    # cap = Javdb()

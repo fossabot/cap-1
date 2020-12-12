@@ -1,6 +1,10 @@
 import re
 
-from crawler.crawlerCommon import CrawlerCommon
+from crawler.crawlerCommon import (
+    CrawlerCommon,
+    GoogleSearch,
+    call
+)
 from utils.logger import setup_logger
 
 logger = setup_logger()
@@ -11,22 +15,26 @@ class Javstore(CrawlerCommon):
     for fc2
 
     """
-    _url = ["https://javstore.net/"]
+    _url = "https://javstore.net"
 
     def __init__(self, number, cfg):
         super().__init__(cfg)
         # test
         logger.debug(f'search {number} by javstore')
-        res = self.search_link_by_google(number, self._url[0])
-        if res is not None:
-            self.html = res
-        else:
-            search_url = self._url[0] + 'search?q=' + number + '&f=all'
-            self.html = self.search(number, search_url, '', '', '')
+        google = GoogleSearch(cfg)
+        url = google.search(number, self._url.replace('https://', ''))
 
+        if url is not None:
+            self.html = self.get_parser_html(url)
+        else:
+            ...
+            # search_url = self._url[0] + '/search?q=' + number + '&f=all'
+            # self.html = self.search(number, search_url, '', '', '')
+
+    @call
     def info(self):
         """
-        number, release, length, actor, director, studio, label, serise, genre
+        number, release, length, director, studio
         """
 
         parents = self.html.xpath('//div[@class="news"]')[0]
@@ -40,18 +48,9 @@ class Javstore(CrawlerCommon):
             if '販売日' in i:
                 self.data.release = re.sub(r'[販売日|\s]', '', i)
             if '販売者' in i:
-                self.data.publisher = re.sub(r'[販売日|\s]', '', i)
+                self.data.publisher = re.sub(r'[販売者|\s]', '', i)
             if '再生時間' in i:
                 self.data.runtime = re.sub(r'[再生時間|\s]', '', i)
-
-    def get_data(self, instance):
-        """
-        运行类中所有不带下划线的方法，返回数据
-        """
-        for _key, _fun in instance.__dict__.items():
-            if type(_fun).__name__ == 'function' and "_" not in _key:
-                _fun(self)
-        return self.data
 
 
 class JavstoreBuilder:
@@ -61,17 +60,18 @@ class JavstoreBuilder:
     def __call__(self, number, cfg):
         if not self._instance:
             self._instance = Javstore(number, cfg)
-        return self._instance.get_data(Javstore)
+            for method in dir(self._instance):
+                fun = getattr(self._instance, method)
+                if getattr(fun, "is_callable", False):
+                    fun()
+        return self._instance.data
 
 
 if __name__ == "__main__":
     # for test
     # pass
-    from core.cli import get_cfg_defaults
+    from utils.config import get_cfg_defaults
 
     cfgs = get_cfg_defaults()
     jav = Javstore("FC2-749704", cfgs)
-    data = jav.get_data(Javstore)
-    print(data.title)
-    print(data.img_url)
-    print(data.text)
+    print(jav.data)

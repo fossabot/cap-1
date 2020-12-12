@@ -1,15 +1,24 @@
 import heapq
+import json
+import random
 import re
 import shutil
 from collections import defaultdict
+from http.cookiejar import LWPCookieJar
+from pathlib import Path
+from urllib.parse import quote_plus, urlparse, parse_qs, quote
 
-from googlesearch import search
-from lxml import etree
+from requests_html import HTML
 
 from crawler.requestHandler import RequestHandler
 from utils.logger import setup_logger
 
 logger = setup_logger()
+
+
+def call(fun):
+    fun.is_callable = True
+    return fun
 
 
 class Metadata(defaultdict):
@@ -19,7 +28,7 @@ class Metadata(defaultdict):
     """
 
     def __init__(self):
-        super(Metadata, self).__init__(Metadata)
+        super().__init__()
 
     def __getattr__(self, key):
         try:
@@ -35,61 +44,42 @@ class CrawlerCommon(RequestHandler):
 
     def __init__(self, cfg):
         super().__init__(cfg)
-        self.data = Metadata()
+        self._data = Metadata()
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, data):
+        self._data = data
 
     def get_parser_html(self, url: str, **kwargs):
         """
-        Return the GET request response of object.
+        Return the parser element
         """
         res = self.get(url, **kwargs).text
-        return etree.HTML(res)
+        return HTML(html=res)
 
-    # // TODO 只给出了link，不适合判断，重写一个
-    def search_link_by_google(self, number, site):
+    def search(self, number, search_url, parents_xpath, id_xpath, url_xpath, **kwargs):
         """
-        偷懒耍滑之 google search
-        Args:
-            number:
-            site:
-
-        Returns:
-
+        通过常规搜索来确定详细页面链接，获取 html
         """
-        res = search(number + '+site:' + site, stop=5)
-        num = re.search(r'-(\d+)', number).group(1)
-        for u in res:
-            if re.findall('img', u):
-                continue
-            searchobj = re.search(num, u)
-            if searchobj:
-                return self.get_parser_html(u)
-            return
+        # 搜索页面
+        search_page = self.get_parser_html(search_url, **kwargs)
+        # 一般搜索界面都是瀑布流，以此为根节点
+        parents = search_page.xpath(parents_xpath)
 
-    def search(self, number, search_link, parents_xpath, id_xpath, url_xpath):
-        """
-        无法通过 numer 定位网页，使用 search 的方法
-        Args:
-            number:
-            search_link:
-            parents_xpath: 获取所有单个项目列表的 xpath
-            id_xpath: 以 parents_xpath 为基础寻找 id 的 xpath
-            url_xpath: 以 parents_xpath 为基础寻找 url 的 xpath
-        Returns:
-
-        """
-        # 获取搜索页面转换为 XML tree
-        tree = self.get_parser_html(search_link)
-        # 进一步使用 xpath 获得该页面所有结果的id，和 id 比较，使用正则？还是相似度呢？
-        # 先获取所有结果的父节点列表, 以此为根节点，搜寻 id， 和 number 比较，如果对应，再以此父节点搜寻链接
-        parents = tree.xpath(parents_xpath)
-
-        part = re.split(r'[-|_]', number)
-        for d in parents:
-            num = d.xpath(id_xpath)[0]
-            if re.match(part[0] + r'[-|_]?' + part[1], num):
-                url = d.xpath(url_xpath)[0]
-                return self.get_parser_html(url)
-            return
+        for element in parents:
+            # 在父节点基础上，搜寻id
+            num = element.xpath(id_xpath, first=True)
+            # 如果id符合
+            if re.match(''.join(filter(str.isalnum, number)), ''.join(filter(str.isalnum, num)), flags=re.I):
+                real_url = element.xpath(url_xpath, first=True)
+                return real_url
+            continue
+        else:
+            pass
 
     def download(self, url, file_name):
         r = self.get(url, stream=True)
@@ -101,9 +91,154 @@ class CrawlerCommon(RequestHandler):
             logger.info(f'sucessfully download: {file_name}')
         logger.warning(f'fail download: {file_name}')
 
-    def download_all(self, img_url: dict, created_folder):
+    def download_all(self, img_url: dict, folder):
         for name, url in img_url.items():
-            self.download(url, created_folder.joinpath(name + 'jpg'))
+            self.download(url, folder.joinpath(name + 'jpg'))
+
+
+class GoogleSearch(RequestHandler):
+    """
+    偷懒耍滑之 google search
+    主要还是用来减少目标站点的次数，应该是有更好的方法的
+    并且检查google search得到的网页是否正确
+    """
+
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        cookie = Path(__file__).parent.parent.joinpath('.google-cookie')
+        self.cookie_jar = LWPCookieJar(cookie)
+        # noinspection PyBroadException
+        try:
+            self.cookie_jar.load(ignore_discard=True, ignore_expires=True)
+        except Exception:
+            self.get_page('https://www.google.com/')
+
+    def get_page(self, url):
+        """
+        加载 cookie， 获取网页，之后保存
+        Args:
+            url: 搜索链接
+
+        Returns:
+
+        """
+        self.session.cookies = self.cookie_jar
+        response = self.session.get(url)
+        response.encoding = 'utf-8'
+        html = response.text
+        # noinspection PyBroadException
+        try:
+            self.cookie_jar.save(ignore_discard=True, ignore_expires=True)
+        except Exception:
+            pass
+        return html
+
+    @staticmethod
+    def filter(link):
+        """
+        获得的原始 url
+        """
+        # 参考自 https://github.com/MarioVilas/googlesearch
+        # noinspection PyBroadException
+        try:
+            if link.startswith('/url?'):
+                link = parse_qs(urlparse(link, 'http').query)['q'][0]
+            url = urlparse(link, 'http')
+            if url.netloc and 'google' not in url.netloc:
+                return link
+        except Exception:
+            ...
+
+    @staticmethod
+    def extract(html, number):
+        """
+        从搜索页面提取标题和 url， 标题中含有番号则返回 url
+        估计这个用xpath提取标题很容易失效
+        Args:
+            html:
+            number:
+
+        Returns:
+
+        """
+        html = HTML(html=html)
+        link_content = html.xpath('//a')
+        # 直接维护列表
+        title_xpath = [
+            '//h3/div/text()',
+            '//h3/span/text()'
+        ]
+        for content in link_content:
+            for xpath in title_xpath:
+                title = content.xpath(xpath, first=True)
+                if not title:
+                    continue
+                if re.match(''.join(filter(str.isalnum, number)), ''.join(filter(str.isalnum, title)), flags=re.I):
+                    link = content.xpath('//@href', first=True)
+                    if link:
+                        return link
+
+    def search(self, number, site):
+        """
+        通过加 site 指定网站，语言使用 en，我试了一下，不然搜不出来
+        Args:
+            number:
+            site:
+
+        Returns:
+
+        """
+        query = quote_plus(number + '+site:' + site)
+        html = self.get_page(f'https://google.com/search?hl=en&q={query}&safe=off')
+        return self.filter(self.extract(html, number))
+
+
+class GoogleTranslate(RequestHandler):
+    # https://github.com/lushan88a/google_trans_new
+    # 直接简化自此项目
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.url = "https://translate.google.com/_/TranslateWebserverUi/data/batchexecute"
+
+    @staticmethod
+    def package_rpc(text, target):
+        parameter = [[text.strip(), 'auto', target, True], [1]]
+        escaped_parameter = json.dumps(parameter, separators=(',', ':'))
+        rpc = [[[random.choice(["MkEWBc"]), escaped_parameter, None, "generic"]]]
+        espaced_rpc = json.dumps(rpc, separators=(',', ':'))
+        return f'f.req={quote(espaced_rpc)}&'
+
+    @staticmethod
+    def extract(decoded):
+        try:
+            response = json.loads((decoded + ']'))
+            response = json.loads(list(response)[0][2])
+            response = list(response)[1][0]
+            if len(response) == 1:
+                if len(response[0]) > 5:
+                    sentences = response[0][5]
+                else:
+                    return response[0][0]
+                return ''.join(''.join(d[0].strip()) for d in sentences)
+            elif len(response) == 2:
+                return ''.join(s[0] for s in response)
+
+        except Exception as exc:
+            logger.warning(f'warn: {exc}')
+
+    def translate(self, text, target='zh-cn'):
+        if len(text) == 0:
+            return
+        freq = self.package_rpc(text, target)
+        headers = {
+            "Referer": "http://translate.google.com/",
+            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+        }
+        response = self.post(self.url, freq, headers=headers)
+        for line in response.iter_lines(chunk_size=1024):
+            decoded = line.decode('utf-8')
+            if "MkEWBc" in decoded:
+                return self.extract(decoded)
 
 
 class PriorityQueue:

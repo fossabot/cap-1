@@ -1,7 +1,7 @@
 import random
 import re
 
-from crawler.crawlerCommon import CrawlerCommon
+from crawler.crawlerCommon import CrawlerCommon, call
 from utils.logger import setup_logger
 
 logger = setup_logger()
@@ -16,19 +16,10 @@ class Javbus(CrawlerCommon):
         super().__init__(cfg)
         # test
         logger.debug(f'search {number} by javbus')
-        # self.data = Metadata()
         base_url = random.choice(self._url)
         self.html = self.get_parser_html(base_url + number)
 
-    def get_data(self, instance):
-        """
-        运行类中所有不带下划线的方法，返回数据
-        """
-        for _key, _fun in instance.__dict__.items():
-            if type(_fun).__name__ == 'function' and "_" not in _key:
-                _fun(self)
-        return self.data
-
+    @call
     def title(self):
         """
         title
@@ -39,6 +30,7 @@ class Javbus(CrawlerCommon):
         except AttributeError:
             self.data.title = title
 
+    # @call
     def info(self):
         """
         number, release, length, actor, director, studio, label, serise, genre
@@ -92,16 +84,20 @@ class JavbusBuilder:
     def __call__(self, number, cfg):
         if not self._instance:
             self._instance = Javbus(number, cfg)
-        return self._instance.get_data(Javbus)
+            for method in dir(self._instance):
+                fun = getattr(self._instance, method)
+                if getattr(fun, "is_callable", False):
+                    fun()
+        return self._instance.data
 
 
 if __name__ == "__main__":
     pass
     # for test
     # pass
-    # from core.cli import get_cfg_defaults
+    from utils.config import get_cfg_defaults
+
     #
-    # cfgs = get_cfg_defaults()
-    # jav = Javbus("111720_001", cfgs)
-    # data = jav.get_data(Javbus)
-    # # print(data.title)
+    cfgs = get_cfg_defaults()
+    jav = Javbus("111720_001", cfgs)
+    print(jav.data)

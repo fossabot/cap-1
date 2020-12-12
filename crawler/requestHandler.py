@@ -1,11 +1,12 @@
 # https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
+
+import random
 from urllib.request import getproxies
 
 import requests
-from faker import Factory
-from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.models import Response
+from requests_html import HTMLResponse
+from requests_html import HTMLSession
 from urllib3.util.retry import Retry
 
 from utils.logger import setup_logger
@@ -22,13 +23,16 @@ class RequestHandler:
         """
         Instantiates a new request handler object.
         """
-        # cfg = get_cfg_defaults()
         self.status_forcelist = cfg.request.status_forcelist
         self.timeout = cfg.request.timeout
         self.total = cfg.request.total
         self.backoff_factor = cfg.request.backoff_factor
         self.delay = cfg.request.delay
-        self._user_agent = Factory.create()
+        # try:
+        #     faker = UserAgent(fallback='google')
+        #     self._user_agent = faker.chrome
+        # except FakeUserAgentError:
+        #     pass
         self.cfg = cfg
 
     @property
@@ -42,6 +46,7 @@ class RequestHandler:
             logger.warning('using system proxy')
         # logger.info('using system proxy')
         return getproxies()
+        # return {'http': 'http://61.135.186.243:80'}
 
     @property
     def retry_strategy(self) -> Retry:
@@ -56,36 +61,53 @@ class RequestHandler:
                      )
 
     @property
-    def session(self) -> Session:
+    def session(self) -> HTMLSession:
         """
-
+        Often when using a third party API you want to verify that the returned response is indeed valid.
+        Requests offers the shorthand helper raise_for_status()
+        which asserts that the response HTTP status code is not a 4xx or a 5xx,
         """
-        session = requests.Session()
+        session = HTMLSession()
         adapter = HTTPAdapter(max_retries=self.retry_strategy)
         session.mount("https://", adapter)
         session.mount("http://", adapter)
-        # Often when using a third party API you want to verify that the returned response is indeed valid.
-        # Requests offers the shorthand helper raise_for_status()
-        # which asserts that the response HTTP status code is not a 4xx or a 5xx,
+
         assert_status_hook = lambda response, *args, **kwargs: response.raise_for_status()
         # the requests library offers a 'hooks' interface
         # where you can attach callbacks on certain parts of the request process.
         session.hooks['response'] = [assert_status_hook]
         # use faker generate fake user-agent
-        session.headers.update({
-            "User-Agent": self._user_agent.user_agent(),
-        })
+        # requests_html 本身用的就是fake-user-agent
+        # session.headers.update({
+        #     "User-Agent": self._user_agent
+        # })
         session.proxies.update(self.proxy_strategy)
         return session
 
-    def get(self, url: str, params: dict = None, **kwargs) -> Response:
+    def get(self, url: str, **kwargs) -> HTMLResponse:
         """
         Returns the GET request encoded in `utf-8`.
         """
-        response = self.session.get(url, timeout=self.timeout, params=params, **kwargs)
-        response.encoding = 'utf-8'
-        return response
+        request = requests.Request('GET', url)
+        prepare = self.session.prepare_request(request)
+        try:
+            response = self.session.send(prepare, timeout=self.timeout, **kwargs)
+            response.encoding = 'utf-8'
+            return response
+        except requests.exceptions.ProxyError as exc:
+            free_proxy_pool = self.cfg.proxy.free_proxy_pool
+            if free_proxy_pool is not None:
+                self.session.rebuild_proxies(prepare, proxies=random.choice(free_proxy_pool))
+                response = self.session.send(prepare, timeout=self.timeout, **kwargs)
+                response.encoding = 'utf-8'
+                return response
+            logger.warning(f'fail to request: {exc}')
+        except requests.exceptions as exc:
+            logger.warning(f'fail to request: {exc}')
 
-    def post(self, url: str, data, headers, **kwargs):
-        response = self.session.post(url, data, timeout=self.timeout, headers=headers, **kwargs)
+    def post(self, url, data, **kwargs):
+
+        request = requests.Request('POST', url=url, data=data, **kwargs)
+        prepare = self.session.prepare_request(request)
+        response = self.session.send(prepare, timeout=self.timeout, **kwargs)
         return response

@@ -5,8 +5,9 @@
 import argparse
 import re
 import textwrap
+from pathlib import Path
 
-from pathlib3x import Path
+import requests
 
 from utils.config import get_cfg_defaults
 from utils.logger import setup_logger
@@ -214,6 +215,14 @@ def number_parser(filename):
 
 
 def check_number_parser(target):
+    """
+    搜索之后，检查番号，可通过手动输入的方式，纠正番号提取
+    Args:
+        target:
+
+    Returns:
+
+    """
     logger.info('file pointing number', extra={'dict': target})
     flag = input('change number(c) or continue(enter) \n')
     if flag.lower() == 'c':
@@ -228,10 +237,16 @@ def check_number_parser(target):
 
 
 def load_argument():
+    """
+    加载配置和命令行输入，处理之后提交给主函数
+    Returns:
+
+    """
     parser = set_argparse()
     assert isinstance(parser.p, str), 'input must single file-id or single folder'
     cfg = load_config(parser)
-
+    if cfg.request.enable_free_proxy_pool:
+        cfg = free_proxy_pool(cfg)
     # split means pointing number
     obj = re.split(r'->', parser.p)
     if len(obj) == 2:
@@ -248,5 +263,15 @@ def load_argument():
                 logger.debug(f'the videos in folder: {obj[0]} will be searched soon:',
                              extra={'list': files})
             number = [number_parser(f) for f in files]
+
             return path, files, number, cfg
         logger.error(f'folder path error: {str(path)}')
+
+
+def free_proxy_pool(cfg):
+    all_proxy = requests.get("http://127.0.0.1:5010/get_all/").json()
+    proxy = []
+    for p in all_proxy:
+        proxy.append(p.get('proxy'))
+    cfg.proxy.free_proxy_pool = proxy
+    return cfg

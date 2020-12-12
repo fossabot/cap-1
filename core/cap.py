@@ -4,7 +4,10 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from pathlib import Path
 
-from core.argument import load_argument
+from core.argument import (
+    load_argument,
+    check_number_parser
+)
 from core.comm import (
     check_data_state,
     extra_tag,
@@ -29,7 +32,6 @@ def thread_pool(f):
     @wraps(f)
     def wrap(*args, **kwargs):
         return asyncio.wrap_future(ThreadPoolExecutor(thePoolsize).submit(f, *args, **kwargs))
-
     return wrap
 
 
@@ -68,7 +70,6 @@ class CapBase:
         根据编号从网站爬取元数据
         依次从各个网站中爬取，根据特定编号排列优先级
         Returns: metadata
-
         """
         # priority init， get sorted website
         priority = WebsitePriority(self.cfg.priority.website)
@@ -80,10 +81,8 @@ class CapBase:
             try:
                 data = services.get(priority.pop(), self.number, self.cfg)
                 if check_data_state(data):
-                    data = extra_tag(self.file, data)
-                    return data
+                    return extra_tag(self.file, data)
                 continue
-            # 这里太宽泛了，很容易跳到这里，添加 finally 来移动文件夹。
             except Exception as exc:
                 logger.error(f'No data obtained: {exc}')
                 continue
@@ -94,6 +93,8 @@ class CapBase:
         use metadate replace location_rule, create folder
         使用爬取的元数据替换路径规则，再创建文件。
         根据 / 划分层级，检查每层文件夹的名称长度
+        Returns: 已创建的文件夹地址
+
         """
         return create_successfull_folder(self.search_folder, data, self.cfg)
 
@@ -101,11 +102,7 @@ class CapBase:
     def file_utils(self, created_folder, data):
         """
         重命名和移动文件
-        Args:
-            created_folder:
-            data:
-
-        Returns:
+        Returns: 重命名和移动之后的文件地址
 
         """
         return rename_move_file(self.file, created_folder, data, self.cfg)
@@ -140,6 +137,8 @@ class CapBase:
         start_time = time.perf_counter()
         logger.info(f'searching: {self.number}')
         data = await self.get_metadata()
+        if not data and not self.cfg.debug.enable:
+            PathHandler.move(self.file, self.failed_folder, flag='failed')
         print(data)
         # created_folder = await self.folder_utils(data)
         # new_file_path = await self.file_utils(created_folder, data)
@@ -151,12 +150,14 @@ class CapBase:
 
 async def capture():
     folder, file, number, cfg = load_argument()
-    if not cfg.common.debug:
+    if not cfg.debug.enable:
         filed_folder = cfg.common.failed_output_folder
         failed = PathHandler.create_folder(folder, filed_folder)
     else:
         failed = ''
     target = dict(zip(file, number))
+    if cfg.debug.check_number_parser:
+        target = check_number_parser(target)
     tasks = []
     for file, number in target.items():
         tasks.append(CapBase.parameter(file, number, folder, failed, cfg).start())

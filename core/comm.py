@@ -3,6 +3,7 @@
 """
 import re
 from pathlib import Path
+from xml.etree.ElementTree import Element, SubElement, ElementTree
 
 from utils.logger import setup_logger
 from utils.path import PathHandler
@@ -10,7 +11,7 @@ from utils.path import PathHandler
 logger = setup_logger()
 
 
-def check_data_state(data) -> object:
+def check_data_state(data) -> bool:
     """
     check main metadata
     """
@@ -48,9 +49,9 @@ def replace_date(data, location_rule: str) -> str:
     replace_data_list = [i for i in data.keys() if i in location_rule]
     for s in replace_data_list:
         location_rule = location_rule.replace(s, data[s])
-    # # Remove illegal characters
-    res = r'[\/\\\:\*\?\"\<\>\|]'
-    return re.sub(res, "_", location_rule)
+    # Remove illegal characters
+    location_rule = re.sub(r'[/\\?%*:|"<>]', "_", location_rule)
+    return location_rule.encode("ASCII", "ignore").decode()
 
 
 def check_name_length(name, max_title_len) -> str:
@@ -124,26 +125,23 @@ def write_nfo(file_path, data, cfg):
         file_path:
         data:
     """
-    pass
-    # nfo_root = Element("movie")
-    # folder = Path(file_path).parent
-    # filename = folder.joinpath(Path(file_path).with_suffix('.nfo'))
-    # nfo_fields = dict
-    # if cfg.common.mode == "":
-    #     nfo_fields = {
-    #         'title': data.title,
-    #         'studio': data.studio,
-    #         'year': data.year,
-    #         'tag': data.tag,
-    #     }
-    # for field_name, values in nfo_fields.items():
-    #     if not values:
-    #         continue
-    #     if not isinstance(values, list):
-    #         values = [values]
-    #     for value in values:
-    #         SubElement(nfo_root, field_name).text = f"{value}"
-    #
-    # ElementTree(nfo_root).write(
-    #     filename, encoding="utf-8", xml_declaration=True, pretty_print=True
-    # )
+    nfo_root = Element("movie")
+    folder = Path(file_path).parent
+    filename = folder.joinpath(Path(file_path).with_suffix('.nfo'))
+    nfo_fields = dict
+    if cfg.common.mode == "":
+        nfo_fields = {
+            'title': data.title,
+            'studio': data.studio,
+            'year': data.year,
+            'tag': data.tag,
+        }
+    for field_name, values in nfo_fields.items():
+        if not values:
+            continue
+        if not isinstance(values, list):
+            values = [values]
+        for value in values:
+            SubElement(nfo_root, field_name).text = f"{value}"
+
+    ElementTree(nfo_root).write(filename, encoding="utf-8", xml_declaration=True)

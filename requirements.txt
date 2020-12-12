@@ -1,8 +1,7 @@
-requests
-yacs
-faker
 importlib
-lxml
+yacs
+pathlib
 urllib3
 termcolor
-pathlib
+requests
+requests_html

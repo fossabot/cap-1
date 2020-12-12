@@ -28,7 +28,8 @@ _C.request.total = 3
 _C.request.backoff_factor = 1
 _C.request.delay = 1
 _C.request.javbd_cookie = ''''''
-_C.request.freepool = []
+_C.request.enable_free_proxy_pool = False
+_C.request.free_proxy_pool = []
 
 _C.name_rule = CN()
 _C.name_rule.location_rule = "actor/number"
