@@ -102,7 +102,7 @@ class RequestHandler:
                 response.encoding = 'utf-8'
                 return response
             logger.warning(f'fail to request: {exc}')
-        except requests.exceptions as exc:
+        except requests.exceptions.RequestException as exc:
             logger.warning(f'fail to request: {exc}')
 
     def post(self, url, data, **kwargs):

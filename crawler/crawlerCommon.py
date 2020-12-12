@@ -26,10 +26,6 @@ class Metadata(defaultdict):
     A dictionary supporting dot notation. and nested access
     do not allow to convert existing dict object recursively
     """
-
-    def __init__(self):
-        super().__init__()
-
     def __getattr__(self, key):
         try:
             return self[key]
@@ -78,8 +74,6 @@ class CrawlerCommon(RequestHandler):
                 real_url = element.xpath(url_xpath, first=True)
                 return real_url
             continue
-        else:
-            pass
 
     def download(self, url, file_name):
         r = self.get(url, stream=True)
@@ -218,7 +212,7 @@ class GoogleTranslate(RequestHandler):
                 if len(response[0]) > 5:
                     sentences = response[0][5]
                 else:
-                    return response[0][0]
+                    sentences = response[0][0]
                 return ''.join(''.join(d[0].strip()) for d in sentences)
             elif len(response) == 2:
                 return ''.join(s[0] for s in response)
