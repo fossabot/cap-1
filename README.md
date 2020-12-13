@@ -1,15 +1,17 @@
-fork:
+fork 自 [AV_Data_Capture](https://github.com/GregoryLuke/AV_Data_Capture)
 
-~~借这个项目练习一下 python ，消磨时间。收藏小姐姐可能是最大的动力吧~~   
+~~借这个项目练习一下 python ，消磨时间。收藏小姐姐可能是最大的动力吧~~
 
 ![](https://img.shields.io/badge/completion%20progress-33.33%25-green)
-![](https://travis-ci.com/GregoryLuke/AV_Data_Capture.svg?branch=exercise)
+![](https://travis-ci.com/GregoryLuke/cap.svg?branch=exercise)
+[![BCH compliance](https://bettercodehub.com/edge/badge/GregoryLuke/cap?branch=exercise)](https://bettercodehub.com/)
 
-对原项目进行了改写（主要是完全自己写，写不出来）
+学习一些一些爬虫和文件操作，要学会了使用一些库，正在尝试看着别人的轮子，学怎么写的
 
-都是新学，主要是一些爬虫和文件操作，各种地方搜，抄的，倒是抄了不少高级操作，也是不求甚解啊。
+正好有个学生包，尝试使用里面的工具。转到新的库也是想使用一些自动化的工具(fork的好像不能提 issue 和 pull requests )
 
- ---
+---
+
 # AV Data Capture (CLI)
 
 CLI 版本  
