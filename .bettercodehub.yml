@@ -12,7 +12,4 @@ component_depth: 1
     registerService.py
   main.py
 languages:
-  - name: python
-    test:
-      include:
-        - test/
+- python
