@@ -55,7 +55,7 @@ class ListFilter(logging.Filter):
 
 
 @functools.lru_cache()  # so that calling setup_logger multiple times won't add many handlers
-def setup_logger(name='cap'):
+def setup_logger(name='cap', debug=False):
     """
     指定保存日志的文件路径，日志级别，以及调用文件
     日志等级 debug 只写入log文件，其他都会在控制台打印
@@ -67,7 +67,10 @@ def setup_logger(name='cap'):
 
     ch = logging.StreamHandler(stream=sys.stdout)
     # for deubg
-    ch.setLevel(logging.DEBUG)
+    if debug:
+        ch.setLevel(logging.DEBUG)
+    else:
+        ch.setLevel(logging.INFO)
     # 控制台输出使用 ColorFormatter
     formatter = ColorfulFormatter(
         '[%(asctime)s %(name)s]: ' + colored("%(message)s", 'cyan'),

@@ -1,6 +1,4 @@
-importlib
 yacs
-pathlib
 urllib3
 termcolor
 requests

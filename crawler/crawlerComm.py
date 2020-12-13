@@ -26,12 +26,10 @@ def call(fun):
     return fun
 
 
-# https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
-
-
 class RequestHandler:
     """
     RequestHandler
+    # https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
     """
 
     def __init__(self, cfg):
@@ -52,8 +50,7 @@ class RequestHandler:
 
             if self.cfg.proxy.type in self.cfg.proxy.support:
                 proxy = "{}://{}".format(self.cfg.proxy.type, self.cfg.proxy.host)
-                proxies = {"http": proxy, "https": proxy}
-                return proxies
+                return {"http": proxy, "https": proxy}
         # logger.debug('using system proxy')
         return getproxies()
 
@@ -90,21 +87,28 @@ class RequestHandler:
 
     @property
     def rebuild_proxies(self) -> dict:
-        free_proxy_pool = self.cfg.proxy.free_proxy_pool
-        if free_proxy_pool is not None:
+        # noinspection PyBroadException
+        try:
+            free_proxy_pool = self.cfg.proxy.free_proxy_pool
             return random.choice(free_proxy_pool)
+        except Exception:
+            pass
 
     def get(self, url: str, **kwargs) -> HTMLResponse:
         """
         Returns the GET request encoded in `utf-8`.
         """
         try:
-            response = self.session.get(url, timeout=self.timeout, proxies=self.proxy_strategy, **kwargs)
+            response = self.session.get(
+                url, timeout=self.timeout, proxies=self.proxy_strategy, **kwargs
+            )
             response.encoding = 'utf-8'
             return response
         except requests.exceptions.ProxyError as exc:
             logger.warning(f'ProxyError: {exc}')
-            response = self.session.get(url, timeout=self.timeout, proxies=self.rebuild_proxies, **kwargs)
+            response = self.session.get(
+                url, timeout=self.timeout, proxies=self.rebuild_proxies, **kwargs
+            )
             response.encoding = 'utf-8'
             return response
         except requests.exceptions.RequestException as exc:
@@ -112,10 +116,14 @@ class RequestHandler:
 
     def post(self, url, data, **kwargs):
         try:
-            return self.session.post(url, timeout=self.timeout, proxies=self.proxy_strategy, data=data, **kwargs)
+            return self.session.post(
+                url, timeout=self.timeout, proxies=self.proxy_strategy, data=data, **kwargs
+            )
         except requests.exceptions.ProxyError as exc:
             logger.warning(f'ProxyError: {exc}')
-            return self.session.post(url, timeout=self.timeout, proxies=self.rebuild_proxies, data=data, **kwargs)
+            return self.session.post(
+                url, timeout=self.timeout, proxies=self.rebuild_proxies, data=data, **kwargs
+            )
         except requests.exceptions.RequestException as exc:
             logger.warning(f'RequestError: {exc}')
 
@@ -125,6 +133,9 @@ class Metadata(defaultdict):
     A dictionary supporting dot notation. and nested access
     do not allow to convert existing dict object recursively
     """
+
+    def __init__(self):
+        super(Metadata, self).__init__(Metadata)
 
     def __getattr__(self, key):
         try:
@@ -171,8 +182,7 @@ class CrawlerBase(RequestHandler):
             num = element.xpath(id_xpath, first=True)
             # 如果id符合
             if re.match(''.join(filter(str.isalnum, number)), ''.join(filter(str.isalnum, num)), flags=re.I):
-                real_url = element.xpath(url_xpath, first=True)
-                return real_url
+                return element.xpath(url_xpath, first=True)
             continue
 
     def download(self, url, file_name):
@@ -200,11 +210,15 @@ class GoogleSearch(RequestHandler):
     def __init__(self, cfg):
         super().__init__(cfg)
         cookie = Path(__file__).parent.parent.joinpath('.google-cookie')
-        self.cookie_jar = LWPCookieJar(cookie)
-        # noinspection PyBroadException
-        try:
-            self.cookie_jar.load(ignore_discard=True, ignore_expires=True)
-        except Exception:
+        if cookie.exists():
+            self.cookie_jar = LWPCookieJar(cookie)
+            # noinspection PyBroadException
+            try:
+                self.cookie_jar.load(ignore_discard=True, ignore_expires=True)
+            except Exception:
+                pass
+        else:
+            self.cookie_jar = None
             self.get_page('https://www.google.com/')
 
     def get_page(self, url):
@@ -216,8 +230,9 @@ class GoogleSearch(RequestHandler):
         Returns:
 
         """
-        self.session.cookies = self.cookie_jar
-        response = self.session.get(url)
+        response = self.session.get(
+            url, timeout=self.timeout, proxies=self.rebuild_proxies, cookies=self.cookie_jar
+        )
         response.encoding = 'utf-8'
         html = response.text
         # noinspection PyBroadException
@@ -267,7 +282,7 @@ class GoogleSearch(RequestHandler):
                 title = content.xpath(xpath, first=True)
                 if not title:
                     continue
-                if re.match(''.join(filter(str.isalnum, number)), ''.join(filter(str.isalnum, title)), flags=re.I):
+                if re.search(''.join(filter(str.isalnum, number)), ''.join(filter(str.isalnum, title)), flags=re.I):
                     link = content.xpath('//@href', first=True)
                     if link:
                         return link

@@ -62,27 +62,48 @@ class Javdb(CrawlerBase):
         """
         number, release, length, actor, director, studio, label, serise, genre
         """
-        (self.data.title,) = self.html.xpath('//h2[@class="title is-4"]/strong/text()')
+        self.data.title = self.html.xpath(
+            '//h2[@class="title is-4"]/strong/text()',
+            first=True
+        )
 
-        parents = self.html.xpath('//nav[@class="panel video-panel-info"]', first=True)
-        print(parents)
-        self.data.id = parents.xpath('//div[1]/a/@data-clipboard-text', first=True)
+        parents = self.html.xpath(
+            '//nav[@class="panel video-panel-info"]',
+            first=True
+        )
+        self.data.id = parents.xpath(
+            '//div[1]/a/@data-clipboard-text',
+            first=True
+        )
 
-        for element in parents.xpath('//div'):
-            if element.xpath('//strong[contains(., "日期")]'):
-                self.data.release = element.xpath('//span/text()', first=True)
-            if element.xpath('//strong[contains(., "時長")]'):
-                self.data.runtime = element.xpath('//span/text()', first=True).replace("分鍾", '')
-            if element.xpath('//strong[contains(., "導演")]'):
-                self.data.director = element.xpath('//span/a/text()', first=True)
-            if element.xpath('//strong[contains(., "片商")]'):
-                self.data.maker = element.xpath('//span/a/text()', first=True)
-            if element.xpath('//strong[contains(., "系列")]'):
-                self.data.series = element.xpath('//span/a/text()', first=True)
-            if element.xpath('//strong[contains(., "類別")]'):
-                self.data.tags = element.xpath('//span/a/text()')
-            if element.xpath('//strong[contains(., "演員")]'):
-                self.data.actor = element.xpath('//span/a/text()')
+        # for element in parents.xpath('//div'):
+        #     if element.xpath('//div/strong[contains(., "日期")]'):
+        self.data.release = parents.xpath(
+            '//div/strong[contains(., "日期")]/../span/text()',
+            first=True
+        )
+        self.data.runtime = parents.xpath(
+            '//div/strong[contains(., "時長")]/../span/text()',
+            first=True
+        ).replace("分鍾", '')
+        self.data.director = parents.xpath(
+            '//div/strong[contains(., "導演")]/../span/a/text()',
+            first=True
+        )
+        self.data.maker = parents.xpath(
+            '//div/span/a/text()/span/a/text()',
+            first=True
+        )
+        self.data.series = parents.xpath(
+            '//div/strong[contains(., "系列")]/../span/a/text()',
+            first=True
+        )
+        self.data.tags = parents.xpath(
+            '//div/strong[contains(., "類別")]/../span/a/text()'
+        )
+        self.data.actor = parents.xpath(
+            '//div/strong[contains(., "演員")]/../span/a/text()'
+        )
 
 
 class JavdbBuilder:
@@ -105,6 +126,6 @@ if __name__ == "__main__":
     from utils.config import get_cfg_defaults
 
     cfgs = get_cfg_defaults()
-    jav = Javdb("ABP-454", cfgs)
-    # print(data)
-    # cap = Javdb()
+    jav = JavdbBuilder()
+    j = jav("ABP-454", cfgs)
+    print(j)

@@ -38,7 +38,8 @@ def set_argparse():
 
     """, '+', lambda line: True))
     parser.add_argument('p', default='G:/a/ARA-460.mp4->ARA-460', nargs='?', help="file->number")
-    parser.add_argument('-c', default="config.yaml", help="configuration_file_path")
+    parser.add_argument('-c', default="config.yaml", help="configuration file path")
+    parser.add_argument('-d', default=False, help="setting global logger")
 
     return parser.parse_args()
 
@@ -240,14 +241,15 @@ def load_argument():
     """
     加载配置和命令行输入，处理之后提交给主函数
     Returns:
-
     """
     parser = set_argparse()
     assert isinstance(parser.p, str), 'input must single file-id or single folder'
     cfg = load_config(parser.c)
+    if parser.d is not False:
+        cfg.deubg.enable = True
     if cfg.request.enable_free_proxy_pool:
         # https://github.com/jhao104/proxy_pool
-        # 测试地址, 一次获取所有，存储在 cfg 中，一遍后续调用
+        # 测试地址, 一次获取所有，存储在 cfg 中，以便后续调用
         all_proxy = requests.get("http://118.24.52.95/get_all/").json()
         cfg.proxy.free_proxy_pool = [p.get('proxy') for p in all_proxy]
     # split means pointing number
@@ -262,11 +264,10 @@ def load_argument():
         path = Path(obj[0]).resolve()
         if path.is_dir():
             files = get_video_path_list(path, cfg)
-            if len(files) > 0:
-                logger.debug(f'the videos in folder: {obj[0]} will be searched soon:',
-                             extra={'list': files})
+            if len(files) > 0 and cfg.deubg.enable:
+                logger.info(f'the videos in folder: {obj[0]} will be searched soon:',
+                            extra={'list': files})
             number = [number_parser(f) for f in files]
 
             return path, files, number, cfg
         logger.error(f'folder path error: {str(path)}')
-

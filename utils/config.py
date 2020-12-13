@@ -19,7 +19,6 @@ _C.proxy = CN()
 _C.proxy.enable = False
 _C.proxy.type = "socks5"
 _C.proxy.host = ""
-_C.proxy.enablefree = False
 
 _C.request = CN()
 _C.request.status_forcelist = ["413", "429", "500", "502", "503", "504"]
@@ -42,10 +41,6 @@ _C.priority.website = ["javbus", "javdb", "javstore"]
 _C.exclude = CN()
 # _C.exclude.literals = "\()/"
 _C.exclude.folders = ["failed", "output", "escape"]
-
-_C.crawler = CN()
-_C.crawler.ua = True
-_C.crawler.retry = 3
 
 # 其他默认设置选项
 _C.proxy.support = ["http", "socks5", "socks5h"]
