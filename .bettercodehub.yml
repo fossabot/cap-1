@@ -1,0 +1,18 @@
+component_depth: 1
+  core/
+  argument.py
+  cap.py
+  comm.py
+  number_parser.py
+  utils/
+  config.py
+  logger.py
+  crawler/
+  crawlerComm.py
+  registerService.py
+  main.py
+languages:
+  - name: python
+    test:
+      include:
+        - test/
