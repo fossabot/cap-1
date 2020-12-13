@@ -1,12 +1,13 @@
-sudo: false
 language: python
 python: 3.8
 
-install: true
-#install:
-#  - pip install codecov
+#install: true
+install:
+  - pip install codecov
+  - pip install coverage
 
-script: true
+script:
+  - coverage run test/test_number_parser.py
 
 after_success:
   - codecov
