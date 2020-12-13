@@ -14,16 +14,22 @@ def auto_register_service():
     """
     service = WebProviderRegister()
     # 搜索二级目录中 py 文件 （Path.cwd()似乎得到的是main文件地址）
-    modules = sum([list(folder.glob('*.py')) for folder in Path(__file__).parent.iterdir()], [])
+    modules = sum(
+        [list(folder.glob("*.py"))
+         for folder in Path(__file__).parent.iterdir()], []
+    )
     for module in modules:
         # eg. crawler.javbus.javbus
-        module_object = import_module('crawler.' + module.parent.name + '.' + module.stem)
+        module_object = import_module(
+            "crawler." + module.parent.name + "." + module.stem
+        )
         # eg. <class 'crawler.javbus.javbus.JavbusBuilder'>
         try:
-            module_class = getattr(module_object, module.stem.capitalize() + 'Builder')
+            module_class = getattr(
+                module_object, module.stem.capitalize() + "Builder")
             service.register_service(module.stem, module_class())
         except AttributeError as e:
-            logger.error(f'error import builder class:{e}')
+            logger.error(f"error import builder class:{e}")
     return service
 
 

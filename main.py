@@ -17,7 +17,7 @@ def main():
     asyncio.run(capture())
 
     end_time = time.perf_counter()
-    logger.debug(f'search video in {end_time - start_time} seconds')
+    logger.debug(f"search video in {end_time - start_time} seconds")
 
 
 if __name__ == "__main__":

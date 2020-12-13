@@ -1,39 +1,34 @@
 import re
 
-from crawler.crawlerComm import (
-    CrawlerBase,
-    GoogleSearch,
-    call
-)
+from crawler.crawlerComm import CrawlerBase, GoogleSearch, call
 from utils.logger import setup_logger
 
 logger = setup_logger()
 
 
 class Avsox(CrawlerBase):
-
     def __init__(self, number, cfg):
         super().__init__(cfg)
         # test
-        logger.debug(f'search {number} by avsox')
+        logger.debug(f"search {number} by avsox")
         self.number = number
         google = GoogleSearch(cfg)
-        url = google.search(self.number, 'avsox.website')
+        url = google.search(self.number, "avsox.website")
         if url is not None:
             self.html = self.get_parser_html(url)
         else:
             self.html = self.search_url()
 
     def search_url(self):
-        transit_html = self.get_parser_html('https://tellme.pw/avsox')
-        home_page_url = transit_html.xpath('//div[@class="container"]/div/a/@href', first=True)
-        search_url = home_page_url + '/cn/search/' + self.number
-        xpath = [
-            '//div[@id="waterfall"]',
-            'div/a/div/span/date/text()',
-            'div/a/@href'
-        ]
-        real_url = self.search(self.number, search_url, xpath[0], xpath[1], xpath[2])
+        transit_html = self.get_parser_html("https://tellme.pw/avsox")
+        home_page_url = transit_html.xpath(
+            '//div[@class="container"]/div/a/@href', first=True
+        )
+        search_url = home_page_url + "/cn/search/" + self.number
+        xpath = ['//div[@id="waterfall"]',
+                 "div/a/div/span/date/text()", "div/a/@href"]
+        real_url = self.search(self.number, search_url,
+                               xpath[0], xpath[1], xpath[2])
         if real_url:
             return self.get_parser_html(real_url)
 
@@ -43,7 +38,7 @@ class Avsox(CrawlerBase):
         """
         title = str(self.html.xpath('//div[@class="container"]/h3/text()')[0])
         try:
-            self.data.title = re.sub(r'[\D|\d]+[-|_]?[\D|\d]+', '', title)
+            self.data.title = re.sub(r"[\D|\d]+[-|_]?[\D|\d]+", "", title)
         except AttributeError:
             self.data.title = title
 

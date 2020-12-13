@@ -3,7 +3,7 @@
 from crawler.crawlerComm import (
     CrawlerBase,
     # GoogleSearch,
-    call
+    call,
 )
 from utils.logger import setup_logger
 

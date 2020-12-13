@@ -7,7 +7,6 @@ logger = setup_logger()
 
 
 class PathHandler:
-
     @staticmethod
     def move(src: Path, dest: Path, flag: str = None):
         """
@@ -20,9 +19,9 @@ class PathHandler:
         assert src.exists()
         try:
             shutil.move(src, dest)
-            logger.info(f'move {src.name} to {flag} folder')
+            logger.info(f"move {src.name} to {flag} folder")
         except Exception as exc:
-            logger.error(f'fail to move file: {str(exc)}')
+            logger.error(f"fail to move file: {str(exc)}")
 
     @staticmethod
     def mkdir(src: Path):
@@ -37,10 +36,10 @@ class PathHandler:
         assert src.exists()
         try:
             src.mkdir()
-            logger.info(f'succeed create folder: {src.as_posix()}')
+            logger.info(f"succeed create folder: {src.as_posix()}")
             return src
         except Exception as exc:
-            logger.error(f'fail to create folder: {str(exc)}')
+            logger.error(f"fail to create folder: {str(exc)}")
 
     def symlink(self):
 

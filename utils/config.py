@@ -26,7 +26,7 @@ _C.request.timeout = 5
 _C.request.total = 3
 _C.request.backoff_factor = 1
 _C.request.delay = 1
-_C.request.javbd_cookie = ''''''
+_C.request.javbd_cookie = """"""
 _C.request.enable_free_proxy_pool = False
 _C.request.free_proxy_pool = []
 
@@ -44,7 +44,18 @@ _C.exclude.folders = ["failed", "output", "escape"]
 
 # 其他默认设置选项
 _C.proxy.support = ["http", "socks5", "socks5h"]
-_C.common.file_type = ['.mp4', '.avi', '.rmvb', '.wmv', '.mov', '.mkv', '.flv', '.ts', '.webm', '.iso']
+_C.common.file_type = [
+    ".mp4",
+    ".avi",
+    ".rmvb",
+    ".wmv",
+    ".mov",
+    ".mkv",
+    ".flv",
+    ".ts",
+    ".webm",
+    ".iso",
+]
 
 
 def get_cfg_defaults():
@@ -52,6 +63,7 @@ def get_cfg_defaults():
     # Return a clone so that the defaults will not be altered
     # This is for the "local variable" use pattern
     return _C.clone()
+
 
 # Alternatively, provide a way to import the defaults as
 # a global singleton:
