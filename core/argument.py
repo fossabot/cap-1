@@ -110,10 +110,9 @@ def get_video_path_list(search_path, cfg):
     # 如果在需要搜索的文件中，文件符合格式后缀，且该文件的所有父级文件夹不在排除文件夹中，则为需要的文件
     # （感觉这个写法开销是很大的，需要改进，且有滥用列表生成式的问题）
     return [
-        f for f in search_path.rglob("*")
-        if f.suffix in file_type
-           and not
-           [n for n in excluded if n in f.parents]
+        f
+        for f in search_path.rglob("*")
+        if f.suffix in file_type and not [n for n in excluded if n in f.parents]
     ]
 
 
@@ -148,8 +147,7 @@ def check_file(obj, cfg):
     file = Path(obj[0])
     if file.is_file():
         logger.info(
-            f"The following video: {obj[0]}  {obj[1]} will be searched soon"
-        )
+            f"The following video: {obj[0]}  {obj[1]} will be searched soon")
         return file, [file], [obj[1]], cfg
     logger.error(f"file path error: {obj[0]}")
 
