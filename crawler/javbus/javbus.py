@@ -1,13 +1,13 @@
 import random
 import re
 
-from crawler.crawlerCommon import CrawlerCommon, call
+from crawler.crawlerComm import CrawlerBase, call
 from utils.logger import setup_logger
 
 logger = setup_logger()
 
 
-class Javbus(CrawlerCommon):
+class Javbus(CrawlerBase):
     _url = ["https://www.fanbus.us/",
             "https://www.javbus.com/"
             ]

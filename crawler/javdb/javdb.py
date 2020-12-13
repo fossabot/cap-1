@@ -1,7 +1,7 @@
 import random
 
-from crawler.crawlerCommon import (
-    CrawlerCommon,
+from crawler.crawlerComm import (
+    CrawlerBase,
     GoogleSearch,
     call
 )
@@ -10,7 +10,7 @@ from utils.logger import setup_logger
 logger = setup_logger()
 
 
-class Javdb(CrawlerCommon):
+class Javdb(CrawlerBase):
     _url = ["https://javdb.com",
             "https://javdb4.com",
             "https://javdb6.com"

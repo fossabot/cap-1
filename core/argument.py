@@ -43,7 +43,7 @@ def set_argparse():
     return parser.parse_args()
 
 
-def load_config(parser):
+def load_config(parser_config):
     """
     load default config and merge user config
     Returns:
@@ -61,9 +61,9 @@ def load_config(parser):
         except Exception as e:
             logger.error(f'config file error:{e}')
 
-    assert isinstance(parser.c, str), 'input must single file->id or single folder'
-    if parser.c:
-        merge_config(parser.c)
+    assert isinstance(parser_config, str), 'input must single file->id or single folder'
+    if parser_config:
+        merge_config(parser_config)
     elif config_file.exists():
         merge_config(str(config_file))
     else:
@@ -78,7 +78,7 @@ def get_video_path_list(search_path, cfg):
         search_path: 需要搜寻的文件夹
         cfg: config
 
-    Returns: 文件地址你表
+    Returns: 文件地址列表
 
     """
     file_type = cfg.common.file_type
@@ -195,7 +195,6 @@ def number_parser(filename):
                 if num:
                     return num.group() + '-' + char
                 return char + '-' + re.search(r'\d+', searchobj5.group()).group()
-            continue
 
     # 最简单的还是通过 - _ 来分割判断
     if '-' in filename or '_' in filename:
@@ -228,7 +227,8 @@ def check_number_parser(target):
     if flag.lower() == 'c':
         file_id = input('use [ <Serial_number><space>number ], eg 4 ABP-454\n')
         try:
-            target['id'][file_id.split()[0] - 1] = file_id.split()[1]
+            file = list(target.keys())[file_id.split()[0] - 1]
+            target[file] = file_id.split()[1]
             check_number_parser(target)
         except KeyError:
             logger.error(f'Syntax error: {file_id}  Check once')
@@ -244,9 +244,12 @@ def load_argument():
     """
     parser = set_argparse()
     assert isinstance(parser.p, str), 'input must single file-id or single folder'
-    cfg = load_config(parser)
+    cfg = load_config(parser.c)
     if cfg.request.enable_free_proxy_pool:
-        cfg = free_proxy_pool(cfg)
+        # https://github.com/jhao104/proxy_pool
+        # 测试地址, 一次获取所有，存储在 cfg 中，一遍后续调用
+        all_proxy = requests.get("http://118.24.52.95/get_all/").json()
+        cfg.proxy.free_proxy_pool = [p.get('proxy') for p in all_proxy]
     # split means pointing number
     obj = re.split(r'->', parser.p)
     if len(obj) == 2:
@@ -267,11 +270,3 @@ def load_argument():
             return path, files, number, cfg
         logger.error(f'folder path error: {str(path)}')
 
-
-def free_proxy_pool(cfg):
-    all_proxy = requests.get("http://127.0.0.1:5010/get_all/").json()
-    proxy = []
-    for p in all_proxy:
-        proxy.append(p.get('proxy'))
-    cfg.proxy.free_proxy_pool = proxy
-    return cfg

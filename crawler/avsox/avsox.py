@@ -1,7 +1,7 @@
 import re
 
-from crawler.crawlerCommon import (
-    CrawlerCommon,
+from crawler.crawlerComm import (
+    CrawlerBase,
     GoogleSearch,
     call
 )
@@ -10,7 +10,7 @@ from utils.logger import setup_logger
 logger = setup_logger()
 
 
-class Avsox(CrawlerCommon):
+class Avsox(CrawlerBase):
 
     def __init__(self, number, cfg):
         super().__init__(cfg)

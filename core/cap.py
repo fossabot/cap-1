@@ -15,8 +15,8 @@ from core.comm import (
     write_nfo,
     rename_move_file
 )
-from crawler.crawlerCommon import (
-    CrawlerCommon,
+from crawler.crawlerComm import (
+    CrawlerBase,
     WebsitePriority
 )
 from crawler.registerService import auto_register_service
@@ -116,7 +116,7 @@ class CapBase:
             data:
             created_folder: 已创建的文件夹地址
         """
-        request = CrawlerCommon(self.cfg)
+        request = CrawlerBase(self.cfg)
         # 伪代码
         img_url = {'poster': data.poster, 'thumb': data.thumb, 'fanart': data.fanart}
         request.download_all(img_url, created_folder)
