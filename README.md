@@ -2,9 +2,10 @@ fork 自 [AV_Data_Capture](https://github.com/GregoryLuke/AV_Data_Capture)
 
 ~~借这个项目练习一下 python ，消磨时间。收藏小姐姐可能是最大的动力吧~~
 
-![](https://img.shields.io/badge/completion%20progress-33.33%25-green)
 ![](https://travis-ci.com/GregoryLuke/cap.svg?branch=exercise)
+[![codecov](https://codecov.io/gh/GregoryLuke/cap/branch/exercise/graph/badge.svg?token=wSjzVLoJR8)](https://codecov.io/gh/GregoryLuke/cap)
 [![BCH compliance](https://bettercodehub.com/edge/badge/GregoryLuke/cap?branch=exercise)](https://bettercodehub.com/)
+[![DeepSource](https://deepsource.io/gh/GregoryLuke/cap.svg/?label=active+issues&show_trend=true)](https://deepsource.io/gh/GregoryLuke/cap/?ref=repository-badge)
 
 学习一些一些爬虫和文件操作，要学会了使用一些库，正在尝试看着别人的轮子，学怎么写的
 
