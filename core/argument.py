@@ -194,5 +194,4 @@ def load_argument():
     assert len(obj) >= 2
     if len(obj) == 2:
         return check_file(obj, cfg)
-    else:
-        return check_folder(obj, cfg)
+    return check_folder(obj, cfg)
