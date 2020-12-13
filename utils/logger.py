@@ -6,6 +6,9 @@ from pathlib import Path
 
 from termcolor import colored
 
+# sentry.io
+from utils import EventHandler
+
 # specify setting for different logging levels
 LOG_FORMATTER = {
     logging.ERROR: ['red', ''.rjust(4), ['reverse']],
@@ -90,6 +93,9 @@ def setup_logger(name='cap', debug=False):
     fh.setFormatter(fh_formatter)
     fh.setLevel(logging.DEBUG)
     logger.addHandler(fh)
+    # only for test
+    # add sentry.io
+    logger.addHandler(EventHandler())
     # 按行打印 list 或者 dict
     logger.addFilter(ListFilter())
 
@@ -107,7 +113,7 @@ if __name__ == '__main__':
     log = setup_logger()
 
     d = {'list': ['str1', 'str2', 'str3']}
-    # d = {'dict': {'one': 'test_one', 'two': 'test_two'}}
+    # # d = {'dict': {'one': 'test_one', 'two': 'test_two'}}
     log.info("This shows extra", extra=d)
     log.info("this is info")
     log.error("this is error")

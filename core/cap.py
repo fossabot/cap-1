@@ -43,7 +43,13 @@ class CapBase:
     """
 
     def __init__(
-            self, file: Path, number: str, search_folder: Path, failed_folder: Path, cfg
+            self,
+            file: Path,
+            number: str,
+            search_folder: Path,
+            failed_folder: Path,
+            cfg,
+            services
     ):
         """
         Args:
@@ -58,10 +64,14 @@ class CapBase:
         self.search_folder = search_folder
         self.failed_folder = failed_folder
         self.cfg = cfg
+        self.services = services
 
     @classmethod
-    def parameter(cls, file, number, search_folder, failed_folder, cfg):
-        return cls(file, number, search_folder, failed_folder, cfg)
+    def parameter(cls, file, number, search_folder, failed_folder, cfg, services):
+        """
+        类方法，外部访问，传入参数，并创建一个实例
+        """
+        return cls(file, number, search_folder, failed_folder, cfg, services)
 
     @thread_pool
     def get_metadata(self):
@@ -74,18 +84,15 @@ class CapBase:
         # priority init， get sorted website
         priority = WebsitePriority(self.cfg.priority.website)
         # priority.sort_website(self.number)
-        # 自动注册 crawler 文件夹中的爬虫类
-        services = auto_register_service()
         while not priority.empty():
             # noinspection PyBroadException
             try:
-                data = services.get(priority.pop(), self.number, self.cfg)
+                data = self.services.get(priority.pop(), self.number, self.cfg)
                 if check_data_state(data):
                     return extra_tag(self.file, data)
                 continue
             except Exception as exc:
                 logger.error(f'No data obtained: {exc}')
-                continue
 
     @thread_pool
     def folder_utils(self, data):
@@ -149,16 +156,26 @@ class CapBase:
 
 
 async def capture():
+    # 获取外部输入参数
     folder, file, number, cfg = load_argument()
+
+    # deubg 不创建文件夹
     if not cfg.debug.enable:
         filed_folder = cfg.common.failed_output_folder
         failed = PathHandler.create_folder(folder, filed_folder)
     else:
-        failed = ''
+        failed = None
+
+    # 文件，番号对应
     target = dict(zip(file, number))
     if cfg.debug.check_number_parser:
         target = check_number_parser(target)
+
+    # 自动注册 crawler 文件夹中的爬虫类
+    services = auto_register_service()
+
+    # 传入参数，创建任务循环
     tasks = []
     for file, number in target.items():
-        tasks.append(CapBase.parameter(file, number, folder, failed, cfg).start())
+        tasks.append(CapBase.parameter(file, number, folder, failed, cfg, services).start())
     await asyncio.gather(*tasks)
