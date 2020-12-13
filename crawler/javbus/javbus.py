@@ -8,14 +8,12 @@ logger = setup_logger()
 
 
 class Javbus(CrawlerBase):
-    _url = ["https://www.fanbus.us/",
-            "https://www.javbus.com/"
-            ]
+    _url = ["https://www.fanbus.us/", "https://www.javbus.com/"]
 
     def __init__(self, number, cfg):
         super().__init__(cfg)
         # test
-        logger.debug(f'search {number} by javbus')
+        logger.debug(f"search {number} by javbus")
         base_url = random.choice(self._url)
         self.html = self.get_parser_html(base_url + number)
 
@@ -24,9 +22,12 @@ class Javbus(CrawlerBase):
         """
         title
         """
-        title = str(self.html.xpath('//div[@class="container"]/div/div[1]/a/img/@title')[0])
+        title = str(
+            self.html.xpath(
+                '//div[@class="container"]/div/div[1]/a/img/@title')[0]
+        )
         try:
-            self.data.title = re.sub(r'n\d+-', '', title)
+            self.data.title = re.sub(r"n\d+-", "", title)
         except AttributeError:
             self.data.title = title
 
@@ -38,17 +39,17 @@ class Javbus(CrawlerBase):
 
         info = self.html.xpath('//div[@class="col-md-3 info"]')
         for i in info:
-            self.data.id = str(i.xpath('//p[1]/span[2]/text()'))
-            runtime = i.xpath('//p[position()>1 and position()<4]/text()')
+            self.data.id = str(i.xpath("//p[1]/span[2]/text()"))
+            runtime = i.xpath("//p[position()>1 and position()<4]/text()")
 
             self.data.release = runtime[0]
-            self.data.runtime = runtime[1].replace('分鐘', '')
+            self.data.runtime = runtime[1].replace("分鐘", "")
             ret4 = i.xpath('ul/div/li//div[@class="star-name"]/a/text()')
-            self.data.actor = ret4 if ret4 else ''
+            self.data.actor = ret4 if ret4 else ""
 
-            ret3 = i.xpath('p/a/text()')
-            ret5 = i.xpath('p/span/text()')
-            if '導演:' in ret5:
+            ret3 = i.xpath("p/a/text()")
+            ret5 = i.xpath("p/span/text()")
+            if "導演:" in ret5:
                 self.data.director = str(ret3[0])
                 self.data.studio = str(ret3[1])
                 self.data.label = str(ret3[2])
@@ -56,11 +57,13 @@ class Javbus(CrawlerBase):
                 self.data.director = ""
                 self.data.studio = str(ret3[0])
                 # self.data.label = str(ret3[1]).strip(" ['']")
-            if '系列:' in ret5:
+            if "系列:" in ret5:
                 self.data.serise = str(ret3[-1])
             else:
                 self.data.serise = ""
-            self.data.genre = i.xpath('p[position()<last()]/span[@class="genre"]/a/text()')
+            self.data.genre = i.xpath(
+                'p[position()<last()]/span[@class="genre"]/a/text()'
+            )
 
     def cover(self):
         """

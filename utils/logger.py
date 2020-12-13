@@ -11,11 +11,11 @@ from utils import EventHandler
 
 # specify setting for different logging levels
 LOG_FORMATTER = {
-    logging.ERROR: ['red', ''.rjust(4), ['reverse']],
-    logging.WARNING: ['yellow', ''.rjust(2), ['underline']],
-    logging.DEBUG: ['white', ''.rjust(4), ['blink']],
-    logging.INFO: ['green', ''.rjust(5), ['blink']],
-    logging.CRITICAL: ['magenta', ''.rjust(1), ['blink']]
+    logging.ERROR: ["red", "".rjust(4), ["reverse"]],
+    logging.WARNING: ["yellow", "".rjust(2), ["underline"]],
+    logging.DEBUG: ["white", "".rjust(4), ["blink"]],
+    logging.INFO: ["green", "".rjust(5), ["blink"]],
+    logging.CRITICAL: ["magenta", "".rjust(1), ["blink"]],
 }
 
 
@@ -26,12 +26,14 @@ class ColorfulFormatter(logging.Formatter):
     def formatMessage(self, record):
         msg = super(ColorfulFormatter, self).formatMessage(record)
         if record.levelno in LOG_FORMATTER:
-            new_msg = '{prefix}{space}{msg}'.format(
-                prefix=colored(text=record.levelname,
-                               color=LOG_FORMATTER[record.levelno][0],
-                               attrs=LOG_FORMATTER[record.levelno][2]),
+            new_msg = "{prefix}{space}{msg}".format(
+                prefix=colored(
+                    text=record.levelname,
+                    color=LOG_FORMATTER[record.levelno][0],
+                    attrs=LOG_FORMATTER[record.levelno][2],
+                ),
                 space=LOG_FORMATTER[record.levelno][1],
-                msg=msg
+                msg=msg,
             )
             return new_msg
 
@@ -44,21 +46,22 @@ class ListFilter(logging.Filter):
     """
 
     def filter(self, record):
-        if hasattr(record, 'list'):
+        if hasattr(record, "list"):
             for v in record.list:
-                record.msg += f'\n\t\t  {v}'
+                record.msg += f"\n\t\t  {v}"
         # extra = {'dict': Dict}
         # 用 count 记数，增加序号，用于检查番号提取（特定需求）
-        if hasattr(record, 'dict'):
+        if hasattr(record, "dict"):
             count = 1
             for k, v in record.dict.items():
-                record.msg += f'\n\t\t  No.{count:<2d} file: {str(k)} -> id: {v} '
+                record.msg += f"\n\t\t  No.{count:<2d} file: {str(k)} -> id: {v} "
                 count += 1
         return super(ListFilter, self).filter(record)
 
 
-@functools.lru_cache()  # so that calling setup_logger multiple times won't add many handlers
-def setup_logger(name='cap', debug=False):
+# so that calling setup_logger multiple times won't add many handlers
+@functools.lru_cache()
+def setup_logger(name="cap", debug=False):
     """
     指定保存日志的文件路径，日志级别，以及调用文件
     日志等级 debug 只写入log文件，其他都会在控制台打印
@@ -76,7 +79,7 @@ def setup_logger(name='cap', debug=False):
         ch.setLevel(logging.INFO)
     # 控制台输出使用 ColorFormatter
     formatter = ColorfulFormatter(
-        '[%(asctime)s %(name)s]: ' + colored("%(message)s", 'cyan'),
+        "[%(asctime)s %(name)s]: " + colored("%(message)s", "cyan"),
         datefmt="%m/%d",
     )
     ch.setFormatter(formatter)
@@ -87,8 +90,7 @@ def setup_logger(name='cap', debug=False):
     fh = logging.StreamHandler(_cached_log_stream(filename))
 
     fh_formatter = logging.Formatter(
-        "[%(asctime)s] %(name)s %(levelname) 8s: %(message)s",
-        datefmt="%m/%d %H:%M:%S"
+        "[%(asctime)s] %(name)s %(levelname) 8s: %(message)s", datefmt="%m/%d %H:%M:%S"
     )
     fh.setFormatter(fh_formatter)
     fh.setLevel(logging.DEBUG)
@@ -109,10 +111,10 @@ def _cached_log_stream(filename):
     return Path.open(filename, "a")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     log = setup_logger()
 
-    d = {'list': ['str1', 'str2', 'str3']}
+    d = {"list": ["str1", "str2", "str3"]}
     # # d = {'dict': {'one': 'test_one', 'two': 'test_two'}}
     log.info("This shows extra", extra=d)
     log.info("this is info")

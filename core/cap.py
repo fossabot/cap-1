@@ -4,21 +4,15 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from pathlib import Path
 
-from core.argument import (
-    load_argument,
-    check_number_parser
-)
+from core.argument import load_argument, check_number_parser
 from core.comm import (
     check_data_state,
     extra_tag,
     create_successfull_folder,
     write_nfo,
-    rename_move_file
+    rename_move_file,
 )
-from crawler.crawlerComm import (
-    CrawlerBase,
-    WebsitePriority
-)
+from crawler.crawlerComm import CrawlerBase, WebsitePriority
 from crawler.registerService import auto_register_service
 from utils.logger import setup_logger
 from utils.path import PathHandler
@@ -31,7 +25,10 @@ logger = setup_logger()
 def thread_pool(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        return asyncio.wrap_future(ThreadPoolExecutor(thePoolsize).submit(f, *args, **kwargs))
+        return asyncio.wrap_future(
+            ThreadPoolExecutor(thePoolsize).submit(f, *args, **kwargs)
+        )
+
     return wrap
 
 
@@ -43,13 +40,13 @@ class CapBase:
     """
 
     def __init__(
-            self,
-            file: Path,
-            number: str,
-            search_folder: Path,
-            failed_folder: Path,
-            cfg,
-            services
+        self,
+        file: Path,
+        number: str,
+        search_folder: Path,
+        failed_folder: Path,
+        cfg,
+        services,
     ):
         """
         Args:
@@ -92,7 +89,7 @@ class CapBase:
                     return extra_tag(self.file, data)
                 continue
             except Exception as exc:
-                logger.error(f'No data obtained: {exc}')
+                logger.error(f"No data obtained: {exc}")
 
     @thread_pool
     def folder_utils(self, data):
@@ -125,7 +122,8 @@ class CapBase:
         """
         request = CrawlerBase(self.cfg)
         # 伪代码
-        img_url = {'poster': data.poster, 'thumb': data.thumb, 'fanart': data.fanart}
+        img_url = {"poster": data.poster,
+                   "thumb": data.thumb, "fanart": data.fanart}
         request.download_all(img_url, created_folder)
         # //TODO 裁剪，水印
 
@@ -142,17 +140,18 @@ class CapBase:
 
     async def start(self):
         start_time = time.perf_counter()
-        logger.info(f'searching: {self.number}')
+        logger.info(f"searching: {self.number}")
         data = await self.get_metadata()
         if not data and not self.cfg.debug.enable:
-            PathHandler.move(self.file, self.failed_folder, flag='failed')
+            PathHandler.move(self.file, self.failed_folder, flag="failed")
         print(data)
         # created_folder = await self.folder_utils(data)
         # new_file_path = await self.file_utils(created_folder, data)
         # await self.img_utils(created_folder, data)
         # await self.create_nfo(new_file_path, data)
         end_time = time.perf_counter() - start_time
-        logger.debug(f"searching: {self.number} (took {end_time:0.2f} seconds).")
+        logger.debug(
+            f"searching: {self.number} (took {end_time:0.2f} seconds).")
 
 
 async def capture():
@@ -177,5 +176,8 @@ async def capture():
     # 传入参数，创建任务循环
     tasks = []
     for file, number in target.items():
-        tasks.append(CapBase.parameter(file, number, folder, failed, cfg, services).start())
+        tasks.append(
+            CapBase.parameter(file, number, folder, failed,
+                              cfg, services).start()
+        )
     await asyncio.gather(*tasks)

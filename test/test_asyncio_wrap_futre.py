@@ -33,31 +33,30 @@ class CapBase:
 
 
 class Cap(CapBase):
-
     def get_data(self):
-        print(f'{self.file} start get data')
+        print(f"{self.file} start get data")
         i = random.randint(0, 10)
         time.sleep(i)
-        print(f'{self.file} end get data')
+        print(f"{self.file} end get data")
         return i
 
     def download(self, tm):
-        print(f'{self.file} start download No. {tm} ')
+        print(f"{self.file} start download No. {tm} ")
         time.sleep(tm)
-        print(f'{self.file} end download No. {tm} ')
+        print(f"{self.file} end download No. {tm} ")
 
     @threadpool
     def start(self):
-        print(f'{self.file}: start')
+        print(f"{self.file}: start")
         res = self.get_data()
         for i in range(3):
             self.download(i)
-        print(f'{self.file}: end')
+        print(f"{self.file}: end")
         return res
 
 
 async def run():
-    files = ['task a', 'task b', 'task c']
+    files = ["task a", "task b", "task c"]
     tasks = []
     for file in files:
         tasks.append(Cap.parameter(file).start())

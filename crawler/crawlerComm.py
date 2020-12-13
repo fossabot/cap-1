@@ -49,7 +49,8 @@ class RequestHandler:
         if self.cfg.proxy.enable:
 
             if self.cfg.proxy.type in self.cfg.proxy.support:
-                proxy = "{}://{}".format(self.cfg.proxy.type, self.cfg.proxy.host)
+                proxy = "{}://{}".format(self.cfg.proxy.type,
+                                         self.cfg.proxy.host)
                 return {"http": proxy, "https": proxy}
         # logger.debug('using system proxy')
         return getproxies()
@@ -64,7 +65,7 @@ class RequestHandler:
         return Retry(
             total=self.total,
             status_forcelist=self.status_forcelist,
-            backoff_factor=self.backoff_factor
+            backoff_factor=self.backoff_factor,
         )
 
     @property
@@ -79,10 +80,12 @@ class RequestHandler:
         session.mount("https://", adapter)
         session.mount("http://", adapter)
 
-        assert_status_hook = lambda response, *args, **kwargs: response.raise_for_status()
+        assert_status_hook = (
+            lambda response, *args, **kwargs: response.raise_for_status()
+        )
         # the requests library offers a 'hooks' interface
         # where you can attach callbacks on certain parts of the request process.
-        session.hooks['response'] = [assert_status_hook]
+        session.hooks["response"] = [assert_status_hook]
         return session
 
     @property
@@ -102,30 +105,38 @@ class RequestHandler:
             response = self.session.get(
                 url, timeout=self.timeout, proxies=self.proxy_strategy, **kwargs
             )
-            response.encoding = 'utf-8'
+            response.encoding = "utf-8"
             return response
         except requests.exceptions.ProxyError as exc:
-            logger.warning(f'ProxyError: {exc}')
+            logger.warning(f"ProxyError: {exc}")
             response = self.session.get(
                 url, timeout=self.timeout, proxies=self.rebuild_proxies, **kwargs
             )
-            response.encoding = 'utf-8'
+            response.encoding = "utf-8"
             return response
         except requests.exceptions.RequestException as exc:
-            logger.warning(f'RequestError: {exc}')
+            logger.warning(f"RequestError: {exc}")
 
     def post(self, url, data, **kwargs):
         try:
             return self.session.post(
-                url, timeout=self.timeout, proxies=self.proxy_strategy, data=data, **kwargs
+                url,
+                timeout=self.timeout,
+                proxies=self.proxy_strategy,
+                data=data,
+                **kwargs,
             )
         except requests.exceptions.ProxyError as exc:
-            logger.warning(f'ProxyError: {exc}')
+            logger.warning(f"ProxyError: {exc}")
             return self.session.post(
-                url, timeout=self.timeout, proxies=self.rebuild_proxies, data=data, **kwargs
+                url,
+                timeout=self.timeout,
+                proxies=self.rebuild_proxies,
+                data=data,
+                **kwargs,
             )
         except requests.exceptions.RequestException as exc:
-            logger.warning(f'RequestError: {exc}')
+            logger.warning(f"RequestError: {exc}")
 
 
 class Metadata(defaultdict):
@@ -141,14 +152,13 @@ class Metadata(defaultdict):
         try:
             return self[key]
         except KeyError:
-            return ''
+            return ""
 
     def __setattr__(self, key, value):
         self[key] = value
 
 
 class CrawlerBase(RequestHandler):
-
     def __init__(self, cfg):
         super().__init__(cfg)
         self._data = Metadata()
@@ -181,7 +191,11 @@ class CrawlerBase(RequestHandler):
             # 在父节点基础上，搜寻id
             num = element.xpath(id_xpath, first=True)
             # 如果id符合
-            if re.match(''.join(filter(str.isalnum, number)), ''.join(filter(str.isalnum, num)), flags=re.I):
+            if re.match(
+                "".join(filter(str.isalnum, number)),
+                "".join(filter(str.isalnum, num)),
+                flags=re.I,
+            ):
                 return element.xpath(url_xpath, first=True)
             continue
 
@@ -190,14 +204,14 @@ class CrawlerBase(RequestHandler):
         if r.status_code == 200:
             r.raw.decode_content = True
 
-            with open(file_name, 'wb') as f:
+            with open(file_name, "wb") as f:
                 shutil.copyfileobj(r.raw, f)
-            logger.info(f'sucessfully download: {file_name}')
-        logger.warning(f'fail download: {file_name}')
+            logger.info(f"sucessfully download: {file_name}")
+        logger.warning(f"fail download: {file_name}")
 
     def download_all(self, img_url: dict, folder):
         for name, url in img_url.items():
-            self.download(url, folder.joinpath(name + 'jpg'))
+            self.download(url, folder.joinpath(name + "jpg"))
 
 
 class GoogleSearch(RequestHandler):
@@ -209,7 +223,7 @@ class GoogleSearch(RequestHandler):
 
     def __init__(self, cfg):
         super().__init__(cfg)
-        cookie = Path(__file__).parent.parent.joinpath('.google-cookie')
+        cookie = Path(__file__).parent.parent.joinpath(".google-cookie")
         if cookie.exists():
             self.cookie_jar = LWPCookieJar(cookie)
             # noinspection PyBroadException
@@ -219,7 +233,7 @@ class GoogleSearch(RequestHandler):
                 pass
         else:
             self.cookie_jar = None
-            self.get_page('https://www.google.com/')
+            self.get_page("https://www.google.com/")
 
     def get_page(self, url):
         """
@@ -231,9 +245,12 @@ class GoogleSearch(RequestHandler):
 
         """
         response = self.session.get(
-            url, timeout=self.timeout, proxies=self.rebuild_proxies, cookies=self.cookie_jar
+            url,
+            timeout=self.timeout,
+            proxies=self.rebuild_proxies,
+            cookies=self.cookie_jar,
         )
-        response.encoding = 'utf-8'
+        response.encoding = "utf-8"
         html = response.text
         # noinspection PyBroadException
         try:
@@ -250,10 +267,10 @@ class GoogleSearch(RequestHandler):
         # 参考自 https://github.com/MarioVilas/googlesearch
         # noinspection PyBroadException
         try:
-            if link.startswith('/url?'):
-                link = parse_qs(urlparse(link, 'http').query)['q'][0]
-            url = urlparse(link, 'http')
-            if url.netloc and 'google' not in url.netloc:
+            if link.startswith("/url?"):
+                link = parse_qs(urlparse(link, "http").query)["q"][0]
+            url = urlparse(link, "http")
+            if url.netloc and "google" not in url.netloc:
                 return link
         except Exception:
             ...
@@ -271,19 +288,20 @@ class GoogleSearch(RequestHandler):
 
         """
         html = HTML(html=html)
-        link_content = html.xpath('//a')
+        link_content = html.xpath("//a")
         # 直接维护列表
-        title_xpath = [
-            '//h3/div/text()',
-            '//h3/span/text()'
-        ]
+        title_xpath = ["//h3/div/text()", "//h3/span/text()"]
         for content in link_content:
             for xpath in title_xpath:
                 title = content.xpath(xpath, first=True)
                 if not title:
                     continue
-                if re.search(''.join(filter(str.isalnum, number)), ''.join(filter(str.isalnum, title)), flags=re.I):
-                    link = content.xpath('//@href', first=True)
+                if re.search(
+                    "".join(filter(str.isalnum, number)),
+                    "".join(filter(str.isalnum, title)),
+                    flags=re.I,
+                ):
+                    link = content.xpath("//@href", first=True)
                     if link:
                         return link
 
@@ -297,8 +315,9 @@ class GoogleSearch(RequestHandler):
         Returns:
 
         """
-        query = quote_plus(number + '+site:' + site)
-        html = self.get_page(f'https://google.com/search?hl=en&q={query}&safe=off')
+        query = quote_plus(number + "+site:" + site)
+        html = self.get_page(
+            f"https://google.com/search?hl=en&q={query}&safe=off")
         return self.filter(self.extract(html, number))
 
 
@@ -307,20 +326,23 @@ class GoogleTranslate(RequestHandler):
     # 直接简化自此项目
     def __init__(self, cfg):
         super().__init__(cfg)
-        self.url = "https://translate.google.com/_/TranslateWebserverUi/data/batchexecute"
+        self.url = (
+            "https://translate.google.com/_/TranslateWebserverUi/data/batchexecute"
+        )
 
     @staticmethod
     def package_rpc(text, target):
-        parameter = [[text.strip(), 'auto', target, True], [1]]
-        escaped_parameter = json.dumps(parameter, separators=(',', ':'))
-        rpc = [[[random.choice(["MkEWBc"]), escaped_parameter, None, "generic"]]]
-        espaced_rpc = json.dumps(rpc, separators=(',', ':'))
-        return f'f.req={quote(espaced_rpc)}&'
+        parameter = [[text.strip(), "auto", target, True], [1]]
+        escaped_parameter = json.dumps(parameter, separators=(",", ":"))
+        rpc = [
+            [[random.choice(["MkEWBc"]), escaped_parameter, None, "generic"]]]
+        espaced_rpc = json.dumps(rpc, separators=(",", ":"))
+        return f"f.req={quote(espaced_rpc)}&"
 
     @staticmethod
     def extract(decoded):
         try:
-            response = json.loads((decoded + ']'))
+            response = json.loads((decoded + "]"))
             response = json.loads(list(response)[0][2])
             response = list(response)[1][0]
             if len(response) == 1:
@@ -328,29 +350,28 @@ class GoogleTranslate(RequestHandler):
                     sentences = response[0][5]
                 else:
                     sentences = response[0][0]
-                return ''.join(''.join(d[0].strip()) for d in sentences)
-            return ''.join(s[0] for s in response)
+                return "".join("".join(d[0].strip()) for d in sentences)
+            return "".join(s[0] for s in response)
 
         except Exception as exc:
-            logger.warning(f'warn: {exc}')
+            logger.warning(f"warn: {exc}")
 
-    def translate(self, text, target='zh-cn'):
+    def translate(self, text, target="zh-cn"):
         if len(text) == 0:
             return
         freq = self.package_rpc(text, target)
         headers = {
             "Referer": "http://translate.google.com/",
-            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
         }
         response = self.post(self.url, freq, headers=headers)
         for line in response.iter_lines(chunk_size=1024):
-            decoded = line.decode('utf-8')
+            decoded = line.decode("utf-8")
             if "MkEWBc" in decoded:
                 return self.extract(decoded)
 
 
 class PriorityQueue:
-
     def __init__(self):
         self._queue = []
         self._index = 0
@@ -410,14 +431,18 @@ class WebsitePriority(PriorityQueue):
         Args:
             number:
         """
-        if re.match(r'^\d{5,}', number) or "heyzo" in number.lower():
+        if re.match(r"^\d{5,}", number) or "heyzo" in number.lower():
             self.arrange("avsox", 1)
-        elif re.match(r'\d+[a-zA-Z]+-\d+', number) or "siro" in number.lower():
+        elif re.match(r"\d+[a-zA-Z]+-\d+", number) or "siro" in number.lower():
             self.arrange("mgstage", 1)
-        elif re.match(r'\D{2,}00\d{3,}', number) and '-' not in number and '_' not in number:
-            self.arrange('dmm', 1)
-        elif re.search(r'\D+\.\d{2}\.\d{2}\.\d{2}', number):
-            self.arrange('javdb', 1)
+        elif (
+            re.match(r"\D{2,}00\d{3,}", number)
+            and "-" not in number
+            and "_" not in number
+        ):
+            self.arrange("dmm", 1)
+        elif re.search(r"\D+\.\d{2}\.\d{2}\.\d{2}", number):
+            self.arrange("javdb", 1)
         elif "fc2" in number.lower():
             self.arrange("fc2", 1)
         elif "rj" in number.lower():

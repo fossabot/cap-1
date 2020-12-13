@@ -25,16 +25,16 @@ def check_data_state(data) -> bool:
 def extra_tag(file_path: Path, data):
     file_name = file_path.name
     # data.extra = {}
-    if '流出' in file_name or 'leaked' in file_name.lower():
-        data.extra.leaked = 'Leaked'
+    if "流出" in file_name or "leaked" in file_name.lower():
+        data.extra.leaked = "Leaked"
 
-    if '-cd' in file_name.lower():
-        searchobj = re.search(r'-cd\d', file_name, flags=re.I)
+    if "-cd" in file_name.lower():
+        searchobj = re.search(r"-cd\d", file_name, flags=re.I)
         if searchobj:
             data.extra.part = searchobj.group()
 
-    if '-c' in file_name.lower() or '中文' in file_name or '字幕' in file_name:
-        data.extra.sub = '-C'
+    if "-c" in file_name.lower() or "中文" in file_name or "字幕" in file_name:
+        data.extra.sub = "-C"
 
     return data
 
@@ -90,14 +90,16 @@ def create_successfull_folder(search_path, data, cfg):
     # If the number of actors is more than 5, take the first two
     # 如果演员数量大于5 ，则取前两个
 
-    if len(data.actor.split(',')) >= 5:
-        data.actor = ','.join(data.actor.split(',')[:2]) + 'etc.'
+    if len(data.actor.split(",")) >= 5:
+        data.actor = ",".join(data.actor.split(",")[:2]) + "etc."
     location_rule = replace_date(data, cfg.name_rule.location_rule)
     # mkdir folder by level
     new_folder = None
-    for name in location_rule.split('/'):
+    for name in location_rule.split("/"):
         name = check_name_length(name, cfg.name_rule.max_title_len)
-        output_folder = create_successfull_folder(search_path, cfg.name_rule.success_output_folder, cfg)
+        output_folder = create_successfull_folder(
+            search_path, cfg.name_rule.success_output_folder, cfg
+        )
         new_folder = PathHandler.mkdir(output_folder.joinpath(name))
     return new_folder
 
@@ -105,11 +107,13 @@ def create_successfull_folder(search_path, data, cfg):
 def rename_move_file(old_file_path, new_folder_path, data, cfg):
     # 替换数据，检查长度，移动和重命名文件，
     # check length of name
-    naming_rule = check_name_length(cfg.name_rule.naming_rule, cfg.name_rule.max_title_len)
+    naming_rule = check_name_length(
+        cfg.name_rule.naming_rule, cfg.name_rule.max_title_len
+    )
     file_name = replace_date(data, naming_rule)
 
     for mark in data.extra.values():
-        file_name += '-' + mark
+        file_name += "-" + mark
 
     file_name += old_file_path.suffix
     new_file_path = new_folder_path.joinpath(file_name)
@@ -127,14 +131,14 @@ def write_nfo(file_path, data, cfg):
     """
     nfo_root = Element("movie")
     folder = Path(file_path).parent
-    filename = folder.joinpath(Path(file_path).with_suffix('.nfo'))
+    filename = folder.joinpath(Path(file_path).with_suffix(".nfo"))
     nfo_fields = dict
     if cfg.common.mode == "":
         nfo_fields = {
-            'title': data.title,
-            'studio': data.studio,
-            'year': data.year,
-            'tag': data.tag,
+            "title": data.title,
+            "studio": data.studio,
+            "year": data.year,
+            "tag": data.tag,
         }
     for field_name, values in nfo_fields.items():
         if not values:
@@ -144,4 +148,5 @@ def write_nfo(file_path, data, cfg):
         for value in values:
             SubElement(nfo_root, field_name).text = f"{value}"
 
-    ElementTree(nfo_root).write(filename, encoding="utf-8", xml_declaration=True)
+    ElementTree(nfo_root).write(
+        filename, encoding="utf-8", xml_declaration=True)
