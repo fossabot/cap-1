@@ -65,34 +65,6 @@ def create_folder(search_path: Path, needed_create: str):
     return mkdir(folder)
 
 
-def check_data_state(data) -> bool:
-    """
-    check main metadata
-    """
-    if not data.title or data.title == "null":
-        return False
-    if not data.id or data.id == "null":
-        return False
-    return True
-
-
-def extra_tag(file_path: Path, data):
-    file_name = file_path.name
-    # data.extra = {}
-    if "流出" in file_name or "leaked" in file_name.lower():
-        data.extra.leaked = "Leaked"
-
-    if "-cd" in file_name.lower():
-        searchobj = re.search(r"-cd\d", file_name, flags=re.I)
-        if searchobj:
-            data.extra.part = searchobj.group()
-
-    if "-c" in file_name.lower() or "中文" in file_name or "字幕" in file_name:
-        data.extra.sub = "-C"
-
-    return data
-
-
 def replace_date(data, location_rule: str) -> str:
     """
     replace path or name with the metadata

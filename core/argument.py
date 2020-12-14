@@ -9,7 +9,7 @@ from pathlib import Path
 
 import requests
 
-from core.number_parser import number_parser
+from core.number import number_parser
 from utils.config import get_cfg_defaults
 from utils.logger import setup_logger
 
@@ -171,6 +171,18 @@ def check_folder(obj, cfg):
     logger.error(f"folder path error: {str(path)}")
 
 
+def free_proxy():
+    """
+    https://github.com/jhao104/proxy_pool
+    测试地址, 一次获取所有，存储在 cfg 中，以便后续调用
+    Returns: proxy list
+
+    """
+
+    all_proxy = requests.get("http://118.24.52.95/get_all/").json()
+    return [p.get("proxy") for p in all_proxy]
+
+
 def load_argument():
     """
     加载配置和命令行输入，处理之后提交给主函数
@@ -183,10 +195,7 @@ def load_argument():
     if parser.d is not False:
         cfg.deubg.enable = True
     if cfg.request.enable_free_proxy_pool:
-        # https://github.com/jhao104/proxy_pool
-        # 测试地址, 一次获取所有，存储在 cfg 中，以便后续调用
-        all_proxy = requests.get("http://118.24.52.95/get_all/").json()
-        cfg.proxy.free_proxy_pool = [p.get("proxy") for p in all_proxy]
+        cfg.proxy.free_proxy_pool = free_proxy()
     # split means pointing number
     obj = re.split(r"->", parser.p)
     assert len(obj) >= 2
