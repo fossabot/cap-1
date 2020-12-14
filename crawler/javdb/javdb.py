@@ -21,7 +21,8 @@ class Javdb(CrawlerBase, GoogleSearch):
         }
         self.number = number
 
-        url = self.google_search(self.number, self.base_url.replace("https://", ""))
+        url = self.google_search(
+            self.number, self.base_url.replace("https://", ""))
 
         if url is not None:
             self.html = self.get_parser_html(url, headers=self.headers)
