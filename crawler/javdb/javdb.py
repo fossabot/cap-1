@@ -1,6 +1,7 @@
 import random
 
-from crawler.crawlerComm import CrawlerBase, call_func
+from crawler.crawlerComm import call_func
+from crawler.crawlerComm import CrawlerBase
 from crawler.search import GoogleSearch
 from utils.logger import setup_logger
 
