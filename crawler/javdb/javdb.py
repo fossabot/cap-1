@@ -22,7 +22,8 @@ class Javdb(CrawlerBase, GoogleSearch):
         }
         self.number = number
 
-        url = self.google_search(self.number, self.base_url.replace("https://", ""))
+        url = self.google_search(self.number,
+                                 self.base_url.replace("https://", ""))
 
         if url is not None:
             self.html = self.get_parser_html(url, headers=self.headers)
@@ -45,11 +46,15 @@ class Javdb(CrawlerBase, GoogleSearch):
             '//a/div[@class="uid"]/text()',
             "//a/@href",
         ]
-        real_url = self.search(
-            self.number, search_url, xpath[0], xpath[1], xpath[2], headers=self.headers
-        )
+        real_url = self.search(self.number,
+                               search_url,
+                               xpath[0],
+                               xpath[1],
+                               xpath[2],
+                               headers=self.headers)
         if real_url:
-            return self.get_parser_html(self.base_url + real_url, headers=self.headers)
+            return self.get_parser_html(self.base_url + real_url,
+                                        headers=self.headers)
 
     @call_func
     def smallcover(self):
@@ -70,33 +75,30 @@ class Javdb(CrawlerBase, GoogleSearch):
         number, release, length, actor, director, studio, label, serise, genre
         """
         self.data.title = self.html.xpath(
-            '//h2[@class="title is-4"]/strong/text()', first=True
-        )
+            '//h2[@class="title is-4"]/strong/text()', first=True)
 
-        parents = self.html.xpath('//nav[@class="panel video-panel-info"]', first=True)
-        self.data.id = parents.xpath("//div[1]/a/@data-clipboard-text", first=True)
+        parents = self.html.xpath('//nav[@class="panel video-panel-info"]',
+                                  first=True)
+        self.data.id = parents.xpath("//div[1]/a/@data-clipboard-text",
+                                     first=True)
 
         # for element in parents.xpath('//div'):
         #     if element.xpath('//div/strong[contains(., "日期")]'):
         self.data.release = parents.xpath(
-            '//div/strong[contains(., "日期")]/../span/text()', first=True
-        )
+            '//div/strong[contains(., "日期")]/../span/text()', first=True)
         self.data.runtime = parents.xpath(
-            '//div/strong[contains(., "時長")]/../span/text()', first=True
-        ).replace("分鍾", "")
+            '//div/strong[contains(., "時長")]/../span/text()',
+            first=True).replace("分鍾", "")
         self.data.director = parents.xpath(
-            '//div/strong[contains(., "導演")]/../span/a/text()', first=True
-        )
-        self.data.maker = parents.xpath("//div/span/a/text()/span/a/text()", first=True)
+            '//div/strong[contains(., "導演")]/../span/a/text()', first=True)
+        self.data.maker = parents.xpath("//div/span/a/text()/span/a/text()",
+                                        first=True)
         self.data.series = parents.xpath(
-            '//div/strong[contains(., "系列")]/../span/a/text()', first=True
-        )
+            '//div/strong[contains(., "系列")]/../span/a/text()', first=True)
         self.data.tags = parents.xpath(
-            '//div/strong[contains(., "類別")]/../span/a/text()'
-        )
+            '//div/strong[contains(., "類別")]/../span/a/text()')
         self.data.actor = parents.xpath(
-            '//div/strong[contains(., "演員")]/../span/a/text()'
-        )
+            '//div/strong[contains(., "演員")]/../span/a/text()')
 
 
 class JavdbBuilder:
