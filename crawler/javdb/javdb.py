@@ -1,12 +1,13 @@
 import random
 
-from crawler.crawlerComm import CrawlerBase, GoogleSearch, call
+from crawler.crawlerComm import CrawlerBase, call_func
+from crawler.search import GoogleSearch
 from utils.logger import setup_logger
 
 logger = setup_logger()
 
 
-class Javdb(CrawlerBase):
+class Javdb(CrawlerBase, GoogleSearch):
     _url = ["https://javdb.com", "https://javdb4.com", "https://javdb6.com"]
 
     def __init__(self, number, cfg):
@@ -16,29 +17,39 @@ class Javdb(CrawlerBase):
         self.base_url = random.choice(self._url)
         self.headers = {
             "Cookie": cfg.request.javbd_cookie,
-            "referer": "https://javdb.com/",
+            "referer": self.base_url,
         }
         self.number = number
-        google = GoogleSearch(cfg)
-        url = google.search(self.number, self.base_url.replace("https://", ""))
+
+        url = self.google_search(self.number, self.base_url.replace("https://", ""))
+
         if url is not None:
             self.html = self.get_parser_html(url, headers=self.headers)
         else:
-            self.html = self.search_url()
+            self.html = self.search_url
 
+    @property
     def search_url(self):
+        """
+
+        Returns: parser html
+
+        """
         search_url = self.base_url + "/search?q=" + self.number + "&f=all"
+        # 瀑布流 xpath
+        # 番号 xpath
+        # 链接 xpath
         xpath = [
             '//div[@class="grid-item column"]',
             '//a/div[@class="uid"]/text()',
             "//a/@href",
         ]
         real_url = self.search(self.number, search_url,
-                               xpath[0], xpath[1], xpath[2])
+                               xpath[0], xpath[1], xpath[2], headers=self.headers)
         if real_url:
-            return self.get_parser_html(self.base_url + real_url)
+            return self.get_parser_html(self.base_url + real_url, headers=self.headers)
 
-    @call
+    @call_func
     def smallcover(self):
         pass
 
@@ -47,11 +58,11 @@ class Javdb(CrawlerBase):
     # self.data.cover = self.html.xpath('//img[@class="video-cover"]/@src')
     # except IndexError:
     #     self.data.cover = ""
-    @call
+    @call_func
     def outline(self):
         pass
 
-    @call
+    @call_func
     def info(self):
         """
         number, release, length, actor, director, studio, label, serise, genre
@@ -94,6 +105,15 @@ class JavdbBuilder:
         self._instance = None
 
     def __call__(self, number, cfg):
+        """
+        传入参数，新建一个实例，运行带有 is_callable 属性的方法（即带有 call_func 装饰器的）
+        Args:
+            number:
+            cfg:
+
+        Returns: data 属性，抓取的数据都在这个字典里
+
+        """
         if not self._instance:
             self._instance = Javdb(number, cfg)
             for method in dir(self._instance):

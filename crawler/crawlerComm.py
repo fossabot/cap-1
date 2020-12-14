@@ -10,7 +10,7 @@ from utils.logger import setup_logger
 logger = setup_logger()
 
 
-def call(fun):
+def call_func(fun):
     fun.is_callable = True
     return fun
 

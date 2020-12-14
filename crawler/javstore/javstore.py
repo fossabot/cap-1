@@ -1,12 +1,13 @@
 import re
 
-from crawler.crawlerComm import CrawlerBase, GoogleSearch, call
+from crawler.crawlerComm import CrawlerBase, call_func
+from crawler.search import GoogleSearch
 from utils.logger import setup_logger
 
 logger = setup_logger()
 
 
-class Javstore(CrawlerBase):
+class Javstore(CrawlerBase, GoogleSearch):
     """
     for fc2
 
@@ -18,8 +19,8 @@ class Javstore(CrawlerBase):
         super().__init__(cfg)
         # test
         logger.debug(f"search {number} by javstore")
-        google = GoogleSearch(cfg)
-        url = google.search(number, self._url.replace("https://", ""))
+
+        url = self.google_search(number, self._url.replace("https://", ""))
 
         if url is not None:
             self.html = self.get_parser_html(url)
@@ -28,7 +29,7 @@ class Javstore(CrawlerBase):
             # search_url = self._url[0] + '/search?q=' + number + '&f=all'
             # self.html = self.search(number, search_url, '', '', '')
 
-    @call
+    @call_func
     def info(self):
         """
         number, release, length, director, studio

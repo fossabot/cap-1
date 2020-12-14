@@ -1,32 +1,39 @@
 import re
 
-from crawler.crawlerComm import CrawlerBase, GoogleSearch, call
+from crawler.crawlerComm import CrawlerBase, call_func
+from crawler.search import GoogleSearch
 from utils.logger import setup_logger
 
 logger = setup_logger()
 
 
-class Avsox(CrawlerBase):
+class Avsox(CrawlerBase, GoogleSearch):
     def __init__(self, number, cfg):
         super().__init__(cfg)
         # test
         logger.debug(f"search {number} by avsox")
         self.number = number
-        google = GoogleSearch(cfg)
-        url = google.search(self.number, "avsox.website")
+
+        url = self.google_search(self.number, "avsox.website")
+
         if url is not None:
             self.html = self.get_parser_html(url)
         else:
-            self.html = self.search_url()
+            self.html = self.search_url
 
+    @property
     def search_url(self):
+        # 搜寻首页
         transit_html = self.get_parser_html("https://tellme.pw/avsox")
         home_page_url = transit_html.xpath(
             '//div[@class="container"]/div/a/@href', first=True
         )
+        # 搜索链接
         search_url = home_page_url + "/cn/search/" + self.number
-        xpath = ['//div[@id="waterfall"]',
-                 "div/a/div/span/date/text()", "div/a/@href"]
+        xpath = [
+            '//div[@id="waterfall"]',
+            "//div/a/div/span/date/text()",
+            "//div/a/@href"]
         real_url = self.search(self.number, search_url,
                                xpath[0], xpath[1], xpath[2])
         if real_url:
@@ -42,13 +49,13 @@ class Avsox(CrawlerBase):
         except AttributeError:
             self.data.title = title
 
-    @call
+    @call_func
     def info(self):
         """
         number, release, length, actor, director, studio, label, serise, genre
         """
-
-        info = self.html.xpath('//div[@class="col-md-3 info"]')
+        ...
+        # info = self.html.xpath('//div[@class="col-md-3 info"]')
 
     # def cover(self):
     #     """

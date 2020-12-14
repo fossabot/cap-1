@@ -102,7 +102,7 @@ class GoogleSearch(RequestHandler):
                     if link:
                         return link
 
-    def search(self, number, site):
+    def google_search(self, number, site):
         """
         通过加 site 指定网站，语言使用 en，我试了一下，不然搜不出来
         Args:

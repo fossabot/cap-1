@@ -1,7 +1,7 @@
 import random
 import re
 
-from crawler.crawlerComm import CrawlerBase, call
+from crawler.crawlerComm import CrawlerBase, call_func
 from utils.logger import setup_logger
 
 logger = setup_logger()
@@ -17,7 +17,7 @@ class Javbus(CrawlerBase):
         base_url = random.choice(self._url)
         self.html = self.get_parser_html(base_url + number)
 
-    @call
+    @call_func
     def title(self):
         """
         title

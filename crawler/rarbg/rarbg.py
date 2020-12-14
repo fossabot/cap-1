@@ -3,7 +3,7 @@
 from crawler.crawlerComm import (
     CrawlerBase,
     # GoogleSearch,
-    call,
+    call_func,
 )
 from utils.logger import setup_logger
 
@@ -19,15 +19,15 @@ class Rarbg(CrawlerBase):
     def search_url(self):
         ...
 
-    @call
+    @call_func
     def smallcover(self):
         ...
 
-    @call
+    @call_func
     def outline(self):
         ...
 
-    @call
+    @call_func
     def info(self):
         ...
 
