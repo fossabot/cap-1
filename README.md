@@ -3,7 +3,8 @@ fork 自 [AV_Data_Capture](https://github.com/GregoryLuke/AV_Data_Capture)
 ~~借这个项目练习一下 python ，消磨时间。收藏小姐姐可能是最大的动力吧~~
 
 ![](https://travis-ci.com/GregoryLuke/cap.svg?branch=exercise)
-[![codecov](https://codecov.io/gh/GregoryLuke/cap/branch/exercise/graph/badge.svg?token=wSjzVLoJR8)](https://codecov.io/gh/GregoryLuke/cap)
+[![codecov](https://codecov.io/gh/GregoryLuke/cap/branch/exercise/graph/badge.svg?token=wSjzVLoJR8)](https://codecov.io/gh/GregoryLuke/cap)[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FGregoryLuke%2Fcap.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FGregoryLuke%2Fcap?ref=badge_shield)
+
 [![BCH compliance](https://bettercodehub.com/edge/badge/GregoryLuke/cap?branch=exercise)](https://bettercodehub.com/)
 [![DeepSource](https://deepsource.io/gh/GregoryLuke/cap.svg/?label=active+issues&show_trend=true)](https://deepsource.io/gh/GregoryLuke/cap/?ref=repository-badge)
 
@@ -82,3 +83,7 @@ When you view and download the source code or binary program of this project, it
 * [点击进群](https://t.me/joinchat/J54y1g3-a7nxJ_-WS4-KFQ)
 
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FGregoryLuke%2Fcap.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FGregoryLuke%2Fcap?ref=badge_large)
