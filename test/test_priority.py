@@ -10,6 +10,7 @@ class PriorityQueue:
         self._pq = []
         self._entry_map = {}
         self._counter = itertools.count()
+        self.priority = staticmethod(lambda p: -int(p or 0))
 
     def add(self, task, priority=None):
         # 如果 task 在 map 中，将原 entry 从 pq中移出
@@ -17,7 +18,7 @@ class PriorityQueue:
             old_entry = self._entry_map.pop(task)
             self._pq.remove(old_entry)
         # 队列由列表形式构成
-        entry = [-priority, next(self._counter), task]
+        entry = [self.priority(priority), next(self._counter), task]
         self._entry_map[task] = entry
         insort(self._pq, entry)
 
